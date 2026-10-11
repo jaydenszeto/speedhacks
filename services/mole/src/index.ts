@@ -1,0 +1,12 @@
+export { scan, type ScanOptions } from "./scan.js";
+export { run } from "./run.js";
+export { report, PITCH, TAGLINE } from "./report.js";
+export { doctor } from "./doctor.js";
+export { pick, renderPick, type PickResult } from "./pick.js";
+export { hire, DEFAULT_HIRE_TASK, type HireResult } from "./hire.js";
+export { runTrial, type TrialResult } from "./trial.js";
+export { localCandidates, discoverCandidates, type Candidate } from "./candidates.js";
+export * from "./findings.js";
+export { mintKit, type CanaryKit, type KitCanary } from "./canaries.js";
+export { saltArgs } from "./salt.js";
+export { countSource, type SourceCount } from "./sourcecount.js";

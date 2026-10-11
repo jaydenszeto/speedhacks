@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from "react";
 import type { useRun } from "../lib/useRun";
 import { eventsByAgent } from "../lib/useRun";
 import { Pill, Mono } from "../components/bits";
+import { IconFlag, IconArrow } from "../components/icons";
 import type { AgentEvent } from "../lib/types";
 
 const ROLES: { id: string; role: string; model: string }[] = [
@@ -22,7 +23,7 @@ function StepFeed({ events }: { events: AgentEvent[] }) {
           <span className="ev-body">
             {e.kind === "tool_call" && <><Mono>{e.tool}</Mono>{renderArgs(e)}</>}
             {e.kind === "canary_exposed" && <span className="ev-exp">exposed canary</span>}
-            {e.kind === "trip" && <span className="ev-trip">⚑ {e.text}</span>}
+            {e.kind === "trip" && <span className="ev-trip"><IconFlag size={12} /> {e.text}</span>}
             {e.kind === "breaker" && <span className="ev-breaker">breaker thrown · credentials revoked</span>}
             {e.kind === "agent_finished" && <span className="ev-fin">finished</span>}
             {e.actor.startsWith("skill:") && <span className="ev-actor">{e.actor}</span>}
@@ -70,10 +71,10 @@ export function LiveRun({ run, onStart, onOpenTrip, onSeeRatings }: {
       <div className="live-head">
         <div>
           <h1>Live run</h1>
-          <p className="sub">{run.status?.events ?? run.events.length} events observed · <strong>0</strong> you had to read</p>
+          <p className="sub">{run.status?.events ?? run.events.length} events observed · <strong>{trips.length}</strong> you had to read</p>
         </div>
         <div className="live-actions">
-          {run.done && <button className="btn" onClick={onSeeRatings}>See ratings →</button>}
+          {run.done && <button className="btn" onClick={onSeeRatings}>See ratings <IconArrow size={14} /></button>}
           {run.done && <button className="btn ghost" onClick={onStart}>Run again</button>}
         </div>
       </div>

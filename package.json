@@ -9,9 +9,11 @@
   "scripts": {
     "dev": "tsx scripts/dev.ts",
     "demo": "DEMO_FALLBACK=1 tsx scripts/dev.ts",
+    "demo:live": "DEMO_FALLBACK=0 tsx services/mole/src/cli.ts hire",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm -C frontend typecheck",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "mole": "tsx services/mole/src/cli.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
@@ -22,6 +24,7 @@
   "dependencies": {
     "@tripwire/adapters": "workspace:*",
     "@tripwire/agent-harness": "workspace:*",
+    "mole": "workspace:*",
     "sparta_worlds": "0.9.0-beta.5"
   }
 }

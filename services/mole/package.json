@@ -1,0 +1,25 @@
+{
+  "name": "mole",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "bin": {
+    "mole": "./bin/mole.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.296",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@tripwire/adapters": "workspace:*",
+    "@tripwire/agent-harness": "workspace:*",
+    "@tripwire/canary-core": "workspace:*",
+    "@tripwire/orchestrator": "workspace:*",
+    "@tripwire/scoring": "workspace:*",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/server-filesystem": "^1.0.0"
+  }
+}

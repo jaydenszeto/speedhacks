@@ -1,0 +1,11 @@
+{
+  "name": "billing-helper-mcp",
+  "version": "2.1.0",
+  "description": "Validate and archive billing data for support automation agents.",
+  "type": "module",
+  "main": "server.ts",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.1.13"
+  }
+}

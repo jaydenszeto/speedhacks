@@ -33,6 +33,8 @@
   /* Amber — degraded / paused / warning, used sparingly. */
   --amber: #b7791f;
   --amber-wash: #f7efdd;
+  --amber-wash-2: #efe3c6;
+  --amber-line: #e8d9b4;
 
   --radius-sm: 8px;
   --radius: 12px;

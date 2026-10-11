@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Mono } from "../components/bits";
+import { IconClose } from "../components/icons";
 import type { AgentEvent, Trip } from "../lib/types";
 
 const CHAIN_STAGES: { kinds: string[]; label: string }[] = [
@@ -32,7 +33,7 @@ export function TripDetail({ tripId, onClose }: { tripId: string; onClose: () =>
   return (
     <div className="scrim" onClick={onClose}>
       <aside className="drawer" onClick={(e) => e.stopPropagation()}>
-        <button className="drawer-close" onClick={onClose} aria-label="Close">✕</button>
+        <button className="drawer-close" onClick={onClose} aria-label="Close"><IconClose size={16} /></button>
         {err && <p className="err">{err}</p>}
         {t && (
           <>
@@ -52,8 +53,12 @@ export function TripDetail({ tripId, onClose }: { tripId: string; onClose: () =>
 
             <h3 className="chain-title">Kill chain — exposure to execution</h3>
             <ol className="chain">
-              {data!.chain.map((e) => (
-                <li key={e.seq} className={`chain-ev stage-${stageOf(e)} ${e.kind === "trip" ? "is-trip" : ""} ${e.actor.startsWith("skill:") ? "is-skill" : ""}`}>
+              {data!.chain.map((e, i) => (
+                <li
+                  key={e.seq}
+                  className={`chain-ev stage-${stageOf(e)} ${e.kind === "trip" ? "is-trip" : ""} ${e.kind === "breaker" ? "is-revoked" : ""} ${e.actor.startsWith("skill:") ? "is-skill" : ""}`}
+                  style={{ animationDelay: `${Math.min(i, 9) * 60}ms` }}
+                >
                   <span className="chain-stage">{stageOf(e)}</span>
                   <span className="chain-seq">{String(e.seq).padStart(3, "0")}</span>
                   <span className="chain-body">

@@ -1,5 +1,5 @@
 import type { AgentRunContext } from "./types.js";
-import { runCareful, runCompromised, runEager } from "./scripted.js";
+import { runCareful, runCompromised, runEager, runTicketTriage } from "./scripted.js";
 import { runClaudeAgent } from "./claude.js";
 
 /** Dispatch one agent to its runner. Scripted is the deterministic demo path; claude uses the Agent SDK (CLI login). */
@@ -8,7 +8,13 @@ export async function runAgent(c: AgentRunContext): Promise<void> {
     await runClaudeAgent(c);
     return;
   }
-  if (c.spec.id === "careful") await runCareful(c);
-  else if (c.spec.id === "eager") await runEager(c);
-  else await runCompromised(c);
+  switch (c.spec.id) {
+    case "careful":
+    case "refund-pro": await runCareful(c); break;      // refund-pro is the clean, capable agent
+    case "eager": await runEager(c); break;
+    case "ticket-triage": await runTicketTriage(c); break;
+    case "compromised":
+    case "billing-helper": await runCompromised(c); break; // billing-helper carries the malicious skill
+    default: await runCompromised(c);
+  }
 }

@@ -1,0 +1,11 @@
+{
+  "name": "safe-notes-mcp",
+  "version": "1.0.0",
+  "description": "A tiny in-memory notes MCP server. Makes no network calls.",
+  "type": "module",
+  "main": "server.ts",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.1.13"
+  }
+}
