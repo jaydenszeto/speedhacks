@@ -162,6 +162,56 @@ export class TripwireRun {
     return this.adapters.keewano.fleetIntel();
   }
 
+  private findByCanaryId(canaryId: string): { world: AgentWorld; sessionId: string; canary: PlantedCanary } | null {
+    for (const w of this.worlds.values()) {
+      const canary = w.world.canaries.find((c) => c.id.toUpperCase() === canaryId.toUpperCase());
+      if (canary) return { world: w.world, sessionId: w.sessionId, canary };
+    }
+    return null;
+  }
+
+  private findByPhone(number: string): { world: AgentWorld; sessionId: string; canary: PlantedCanary } | null {
+    const digits = number.replace(/\D/g, "").slice(-10);
+    for (const w of this.worlds.values()) {
+      const canary = w.world.canaries.find((c) => [c.value, ...c.fragments].some((v) => v.replace(/\D/g, "").slice(-10) === digits && v.replace(/\D/g, "").length >= 10));
+      if (canary) return { world: w.world, sessionId: w.sessionId, canary };
+    }
+    return null;
+  }
+
+  /** Collector hit: GET /t/:canaryId was fetched — the agent (or something it told) called home. */
+  recordCollectorHit(canaryId: string, meta: { ip?: string; userAgent?: string } = {}) {
+    const found = this.findByCanaryId(canaryId);
+    if (!found) return { ok: false as const, reason: "unknown canary" };
+    const seq = this.bus.all().at(-1)?.seq ?? 0;
+    const { trip, isNew } = this.trips.record({
+      agentId: found.canary.agentId, sessionId: found.sessionId, canary: found.canary, canaryType: found.canary.type,
+      category: found.canary.category, detectedVia: "collector",
+      headline: `Canary URL ${found.canary.value} was fetched (called home to the collector)`,
+      atSeq: seq, evidence: { channel: "collector", destination: meta.ip, actor: "external", details: { userAgent: meta.userAgent } },
+    });
+    return { ok: true as const, trip, isNew };
+  }
+
+  /** Dial inbound: a real call or SMS reached a canary number — a callback-free trip. */
+  recordDialInbound(number: string, kind: "call" | "sms", meta: { from?: string; body?: string } = {}) {
+    const found = this.findByPhone(number);
+    if (!found) return { ok: false as const, reason: "unknown number" };
+    const seq = this.bus.all().at(-1)?.seq ?? 0;
+    const { trip, isNew } = this.trips.record({
+      agentId: found.canary.agentId, sessionId: found.sessionId, canary: found.canary, canaryType: found.canary.type,
+      category: found.canary.category, detectedVia: "dial_webhook",
+      headline: `Canary number ${number} received an inbound ${kind}${meta.from ? ` from ${meta.from}` : ""}`,
+      atSeq: seq, evidence: { channel: `dial_${kind}`, destination: number, actor: "external", details: { from: meta.from, body: meta.body } },
+    });
+    return { ok: true as const, trip, isNew };
+  }
+
+  /** The owner alert from the most recent trip, for display. */
+  snapshot() {
+    return { runId: this.runId, phase: this.phase, error: this.error, alert: this.alert };
+  }
+
   async destroy() {
     for (const w of this.worlds.values()) await w.handle.destroy().catch(() => undefined);
   }

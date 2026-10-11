@@ -17,23 +17,23 @@
 - [completed] packages/adapters: sparta (live+mock, verified), dial (live+mock), keewano (live+mock+mirror), darwin, alike + tests
 [completed] services/orchestrator: scenario+canary minting, event bus, egress monitor, circuit breaker, trip recorder, world tools
 - [completed] services/agent-harness: 3 scripted agents + Claude Agent SDK runner (CLI login), malicious skill, run coordinator
-- [pending] services/collector: GET /t/:canaryId → trip
-- [pending] services/webhooks: Dial inbound → trip (+ signature verify)
+- [completed] services/collector: GET /t/:canaryId → trip (mounted in api gateway)
+- [completed] services/webhooks: Dial inbound → trip (+ signature verify) (mounted in api gateway)
 - [completed] services/scoring: crash-test ratings + task utility verified against Sparta diff
-- [pending] SSE stream orchestrator → dashboard
+- [completed] SSE stream orchestrator → dashboard
 
 ### 2–4. Report, replay, polish
-- [pending] frontend: Scenario, Live run, Trip detail + kill-chain replay, Ratings, Trust Report
-- [pending] one-command run + /health on each service + README + demo script
+- [completed] frontend: Scenario, Live run, Trip detail + kill-chain replay, Ratings, Trust Report (QA'd desktop + mobile)
+- [completed] one-command run (scripts/dev.ts) + /health on each surface + README + demo script + .env.example + smoke test
 - [pending] impeccable finish review + DESIGN.md
 
 ## Direction pivot (2026-10-11) — BROADEN, don't replace (keep all built work)
 - [completed] Malicious skill headline: postmark-style BCC exfil + env-secret append on real-looking key; Eager injection secondary
 - [completed] Secret-swap guardrail: stray decoy key in infra/.env.bak + destructive tools block on use (ticket #4481)
-- [pending] Attribution-first UI/README: which agent, session, skill/MCP server, how far (exposure→persistence→relay→execution).
-- [pending] README note: canary keys self-minted (not canarytokens.org / TruffleHog-flagged)
+- [completed] Attribution-first UI/README: which agent, session, skill/MCP server, how far (exposure→handling→execution→response). Trust Report attribution footer + trip drawer attribution grid.
+- [completed] README note: canary keys self-minted (not canarytokens.org / TruffleHog-flagged)
 - [completed] GitHub-watch detector (adapters/github.ts): real via API, mock otherwise
-- [pending] Positioning: add Acalvio + GitGuardian; a16z "dependencies are the new perimeter"; "Keycard says who, Neo controls what, Tripwire proves what it actually did."
+- [completed] Positioning: Acalvio + GitGuardian; a16z "dependencies are the new perimeter"; "Keycard says who, Neo controls what, Tripwire proves what it actually did." (PRODUCT.md + README)
 
 ## Stretch (in order)
 - [pending] Coding-agent scenario (Claude Code / Cursor) + test 5–10 real community MCP servers/skills for real data

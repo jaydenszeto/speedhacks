@@ -1,0 +1,16 @@
+{
+  "name": "@tripwire/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.ts",
+  "dependencies": {
+    "@hono/node-server": "^1.19.17",
+    "@tripwire/adapters": "workspace:*",
+    "@tripwire/agent-harness": "workspace:*",
+    "@tripwire/canary-core": "workspace:*",
+    "@tripwire/orchestrator": "workspace:*",
+    "@tripwire/scoring": "workspace:*",
+    "hono": "^4.13.13"
+  }
+}
