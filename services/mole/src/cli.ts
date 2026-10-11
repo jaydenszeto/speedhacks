@@ -1,5 +1,5 @@
 /**
- * Mole CLI entrypoint. "Mole: we catch bad AI agents red-handed."
+ * Mole CLI entrypoint. "Mole: give an AI agent your credit card and walk away."
  * The trust layer for AI agents hiring other AI agents.
  *   mole hire "<task>"               a personal assistant hires a specialist — Mole clears it first (the demo flow)
  *   mole pick "<task>"               trial every candidate agent and rank them: cleared, or caught
@@ -72,7 +72,7 @@ async function cmdPick(rest: string[]): Promise<number> {
   saveLastPick(result);
   if (json) console.log(JSON.stringify(result, null, 2));
   else process.stdout.write(`\n${renderPick(result)}`);
-  // Exit 0 when at least one agent is safe to hire, 1 when none cleared.
+  // Exit 0 when at least one agent is cleared to hire, 1 when none cleared.
   return result.clearedLabels.length > 0 ? 0 : 1;
 }
 
@@ -105,7 +105,7 @@ async function main(): Promise<number> {
     case undefined:
     case "-h":
     case "--help":
-      console.log(`${col.bold("mole")} — we catch bad AI agents red-handed\n`);
+      console.log(`${col.bold("mole")} — give an AI agent your credit card and walk away\n`);
       console.log(`  mole hire "<task>"               an assistant hires a specialist; Mole clears it first (the demo)`);
       console.log(`  mole pick "<task>"               trial every candidate agent and rank them: cleared, or caught`);
       console.log(`  mole scan <mcp-server-command>   probe one server's tools with bait (deterministic, no LLM)`);

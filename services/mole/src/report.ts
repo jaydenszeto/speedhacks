@@ -9,14 +9,14 @@ import { statSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { buildAdapters } from "@tripwire/adapters";
 import { loadLastScan, loadLastRun, loadLastPick, loadLastHire, statePaths } from "./state.js";
-import { col } from "./format.js";
+import { col, redactSecrets } from "./format.js";
 import type { ScanResult } from "./findings.js";
 import type { RunRecord } from "./state.js";
 import type { PickResult } from "./pick.js";
 import type { HireResult } from "./hire.js";
 import type { TrialResult } from "./trial.js";
 
-export const TAGLINE = "Mole: we catch bad AI agents red-handed.";
+export const TAGLINE = "Mole: give an AI agent your credit card and walk away.";
 export const PITCH =
   "The trust layer for AI agents hiring other AI agents. Every candidate is cleared — job done, and bait untouched — before it's used, so people stop watching each step and assistants get a cleared-or-caught answer without asking a human.";
 
@@ -99,7 +99,7 @@ function findingsHtml(scan: ScanResult): string {
     <div class="finding sev-${f.severity}">
       <div class="f-head"><span class="sev">${f.severity}</span><span class="tool">${esc(f.tool)}</span><span class="ctype">${esc(f.canaryType)} · ${esc(f.canaryLabel)}</span></div>
       <div class="f-dest">${f.channel === "collector" ? "called home to the collector" : `sent out → ${esc(f.destination)}`}${f.decoding && f.decoding !== "raw" ? ` <span class="dim">[${esc(f.decoding)}-decoded]</span>` : ""}</div>
-      <pre class="evidence">${esc(f.evidence)}</pre>
+      <pre class="evidence">${esc(redactSecrets(f.evidence, f.matched ? [f.matched] : []))}</pre>
     </div>`).join("");
 }
 
@@ -169,6 +169,6 @@ function renderHtml({ scan, run, trialSource, prior }: {
   ${run ? `<h2>Live run</h2>${tripsHtml(run)}` : ""}
   <h2>Previous trips for this skill</h2>
   ${priorHtml}
-  <div class="foot">Proof, not opinion — generated from recorded events, no LLM judge. Sparta checks the agent did what it was supposed to; Mole checks it did nothing it wasn't. Mole reports what was tested and what was caught; it does not certify any agent as safe.</div>
+  <div class="foot">Proof, not opinion — generated from recorded events, no LLM judge. Sparta checks the agent did what it was supposed to; Mole checks it did nothing it wasn't. A <strong>cleared</strong> agent is one that passed both checks on this task — nothing broader; Mole reports only what it tested and what it caught.</div>
 </div></body></html>`;
 }

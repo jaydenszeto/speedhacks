@@ -19,6 +19,33 @@ export function maskPhone(p: string): string {
   return `${"•".repeat(Math.max(3, d.length - 2))}${d.slice(-2)}`;
 }
 
+/**
+ * Redact a single known secret value to its prefix + last four characters only — never the full secret.
+ * A recognisable scheme prefix (`sk_live_`, `postgres://`, …) is kept; otherwise the first 8 chars.
+ */
+export function redactSecretValue(v: string): string {
+  const s = String(v);
+  if (s.length <= 10) return s;
+  const schemeMatch = s.match(/^(sk_live_|sk_test_|rk_live_|whsec_|postgres:\/\/|mysql:\/\/|mongodb(?:\+srv)?:\/\/|https?:\/\/)/i);
+  const head = schemeMatch ? schemeMatch[1] : s.slice(0, 8);
+  return `${head}…${s.slice(-4)}`;
+}
+
+/**
+ * Redact secrets anywhere in a free-text line to prefix + last four. Any exact `known` secret values are
+ * masked first; then common secret shapes (API keys, connection strings) and phone numbers as a backstop.
+ */
+export function redactSecrets(text: string, known: string[] = []): string {
+  let out = String(text);
+  for (const k of known) {
+    if (k && k.length > 10) out = out.split(k).join(redactSecretValue(k));
+  }
+  return out
+    .replace(/(sk_live_|sk_test_|rk_live_|whsec_)[A-Za-z0-9]{6,}/g, (_m, p) => `${p}…${_m.slice(-4)}`)
+    .replace(/(postgres|mysql|mongodb(?:\+srv)?):\/\/[^\s"']+/gi, (_m, p) => `${p}://…`)
+    .replace(/\+?\d[\d\s().-]{8,16}\d/g, (m) => maskPhone(m));
+}
+
 /** "1 file" / "2 files" — keeps the header and summary line grammatical at recording resolution. */
 function plural(n: number, one: string, many = `${one}s`): string {
   return `${n.toLocaleString()} ${n === 1 ? one : many}`;
@@ -73,8 +100,8 @@ export function renderScan(r: ScanResult): string {
       const dec = f.decoding && f.decoding !== "raw" ? col.dim(` [${f.decoding}-decoded]`) : "";
       out.push(`  ${sevTag(f.severity)} ${col.bold(f.tool)}  ${col.dim(f.canaryType)} · ${f.canaryLabel}`);
       out.push(`           ${via}${dec}`);
-      if (f.matched) out.push(`           ${col.dim("matched")} ${abbrev(f.matched)}`);
-      out.push(col.dim(indent(cap(f.evidence), "             ")));
+      if (f.matched) out.push(`           ${col.dim("matched")} ${abbrev(redactSecretValue(f.matched))}`);
+      out.push(col.dim(indent(cap(redactSecrets(f.evidence, f.matched ? [f.matched] : [])), "             ")));
       out.push("");
     }
   }

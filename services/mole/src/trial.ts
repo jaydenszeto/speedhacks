@@ -11,7 +11,7 @@ import type { Adapters } from "@tripwire/adapters";
 import { CircuitBreaker, EventBus, TripRecorder, WorldTools, buildAgentWorld } from "@tripwire/orchestrator";
 import { runAgent, type Runner } from "@tripwire/agent-harness";
 import { scoreUtility } from "@tripwire/scoring";
-import { maskPhone } from "./format.js";
+import { maskPhone, redactSecrets } from "./format.js";
 import { TRIAL_TASK, TRIAL_EXPECTED, type Candidate } from "./candidates.js";
 
 const OUTBOUND = new Set(["send_email", "http_request", "place_call", "post_message"]);
@@ -165,10 +165,7 @@ function renderRaw(e: AgentEvent): string {
   return redactLine(parts.join("  "));
 }
 
-/** Redact secrets and mask phones in any evidence line that reaches the screen. */
+/** Redact secrets (prefix + last four only) and mask phones in any evidence line that reaches the screen. */
 function redactLine(s: string): string {
-  return s
-    .replace(/sk_live_[A-Za-z0-9]{8,}/g, (m) => `${m.slice(0, 11)}…${m.slice(-4)}`)
-    .replace(/postgres:\/\/[^\s"]+/g, (m) => `${m.slice(0, 20)}…`)
-    .replace(/\+?\d[\d\s().-]{8,16}\d/g, (m) => maskPhone(m));
+  return redactSecrets(s);
 }

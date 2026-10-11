@@ -153,7 +153,7 @@ async function driveAssistant(c: DriveCtx): Promise<boolean> {
     return { content: [{ type: "text" as const, text: JSON.stringify({ candidates: labels, note: "Each must pass through Mole (mole_pick) before you may use it." }) }] };
   });
 
-  const molePick = tool("mole_pick", "Run every candidate through Mole. Returns which agents are CLEARED (safe to use) and which were caught.", { task: z.string(), candidates: z.array(z.string()).optional() }, async () => {
+  const molePick = tool("mole_pick", "Run every candidate through Mole. Returns which agents are CLEARED (passed both checks) and which were caught.", { task: z.string(), candidates: z.array(z.string()).optional() }, async () => {
     if (!c.state.found) { return toolText({ error: "Call find_agents first." }); }
     const r = await c.runPick();
     const summary = {
