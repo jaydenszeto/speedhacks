@@ -12,8 +12,8 @@ Vite + React + TypeScript dashboard in `frontend/`; Node 24 + TypeScript service
 
 ## Users
 
-- **Primary:** a platform or security engineer at a company deploying a customer-support agent with access to Stripe and Zendesk. They want to know whether the agent, or any skill or MCP server it uses, will leak data or get hijacked, without reading every transcript.
-- **Secondary:** an AI agent vendor who wants a shareable, evidence-backed Trust Report to speed up enterprise security review.
+- **Primary:** a platform or security engineer deploying agents (a customer-support agent on Stripe + Zendesk for tonight's demo; coding agents like Claude Code / Cursor as the real first market). They want to know whether the agent, or any skill or MCP server it installed, will leak data or get hijacked, without reading every transcript. Second win for this audience: no false alarms means no alert triage.
+- **Secondary:** an AI agent or MCP-server vendor who wants a shareable, evidence-backed Trust Report (a public safety rating of skills/MCP servers) to speed up enterprise security review.
 - **Event audience:** hackathon judges watching a three-minute live demo on a projector.
 
 ## Product Purpose
@@ -28,10 +28,21 @@ Success: a person who runs agents can stop reviewing every action, and still kno
 
 "Sandboxes show what an agent does when it's being watched. Canaries catch what it does when it thinks nobody's watching."
 
-- Watches *your own* agents and the tools they install (Thinkst Canary catches attacker agents on a network).
+The sharper claim is **attribution**: Tripwire proves *which* agent, session, skill or MCP server tripped a canary and *how far* it got (exposure → persistence → relay → execution). Competitors report which machine; we report which dependency and which step. Pitch opener (a16z): "dependencies are the new perimeter." Companion line: "Keycard says who, Neo controls what, Tripwire proves what it actually did."
+
+- Watches *your own* agents and the tools/skills/MCP servers they install (Thinkst Canary catches attacker agents on a network).
 - Continuous and live, not point-in-time certification (AIUC-1).
 - Answers "does it misbehave?" with binary proof, not "can it be broken?" judged by an LLM (Mindgard, Lakera, Promptfoo).
 - Tripwires stay in place after install, so conditional and post-install payloads still get caught (install-time skill sandboxes miss them).
+- Closer competitors: Acalvio (deception grids, enterprise/network) and GitGuardian (secret scanning, repo-side). Tripwire is agent-side and attribution-first, and its decoys double as guardrails (the circuit breaker blocks the action), not just alerts.
+
+## Threat model (villains, kept broad)
+
+1. **Gullible model** follows a hidden instruction in data (injection bait). Strong models mostly refuse, so this is the *secondary* threat.
+2. **Malicious skill / MCP server** (the *headline*, modeled on the real postmark-mcp BCC-exfil attack): a tool the agent installed quietly exfiltrates data — BCCs outbound email to an attacker, appends env secrets to outbound requests — only on real-looking data (a conditional payload an install-time sandbox never triggers).
+3. **Stray production credential** picked up from an unrelated file (the PocketOS incident): the agent grabs it and tries a destructive action. Tripwire's **secret swap** already moved the real credential to a vault and left a decoy in place, so the agent gets the decoy, the canary trips, and the breaker blocks the action *before* anything is deleted.
+
+Canary keys are self-minted from our own revocable accounts, never canarytokens.org (TruffleHog recognizes those). Detection is both callback-based (collector, Dial webhooks) and callback-free (outbound-traffic inspection, and watching public GitHub for canary strings).
 
 ## Operating Context
 

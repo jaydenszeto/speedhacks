@@ -1,0 +1,19 @@
+{
+  "name": "@tripwire/agent-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.3.296",
+    "@tripwire/adapters": "workspace:*",
+    "@tripwire/canary-core": "workspace:*",
+    "@tripwire/orchestrator": "workspace:*",
+    "@tripwire/scoring": "workspace:*",
+    "zod": "4.1.13"
+  }
+}
