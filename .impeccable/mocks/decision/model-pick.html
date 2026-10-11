@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--tint:#E9F0E6;--paper:#FBFCF8;--ink:#1D2B25;--ink2:rgba(29,43,37,.64);--sage:#8FB39B;--seal:#3D5A80;--void:#C8553D;--line:rgba(29,43,37,.14)}
+*{box-sizing:border-box;margin:0}body{width:1440px;height:900px;overflow:hidden;font-family:'Hanken Grotesk',sans-serif;color:var(--ink);background:var(--tint);
+background-image:repeating-radial-gradient(circle at 0 0,transparent 0 18px,rgba(143,179,155,.18) 18px 19px),repeating-radial-gradient(circle at 100% 100%,transparent 0 22px,rgba(143,179,155,.14) 22px 23px)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:22px 40px;border-bottom:1px solid var(--line);background:rgba(251,252,248,.85)}
+.brand{font-weight:700;font-size:22px;display:flex;gap:10px;align-items:center}.seal{width:22px;height:22px;border-radius:50%;border:2px solid var(--seal);box-shadow:inset 0 0 0 3px var(--paper),inset 0 0 0 5px var(--seal)}
+.tabs{display:flex;gap:26px;font-size:15px;color:var(--ink2)}.tabs b{color:var(--ink)}
+.wrap{padding:34px 40px;display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+h1{grid-column:1/-1;font-size:36px;font-weight:600}
+.card{position:relative;background:var(--paper);border-radius:6px;padding:26px;min-height:560px;outline:1px solid var(--line);outline-offset:-10px;
+box-shadow:0 1px 0 var(--line),0 18px 40px -24px rgba(29,43,37,.25)}
+.card::before{content:"";position:absolute;inset:14px;border:6px double rgba(143,179,155,.55);border-radius:3px;pointer-events:none}
+.card h2{font-size:30px;font-weight:600;margin-top:8px}.card small{font-size:13px;color:var(--ink2)}
+.grade{font-size:72px;font-weight:700;color:var(--seal);margin:26px 0 10px}
+.row{display:flex;justify-content:space-between;font-size:15px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.void{position:absolute;top:210px;left:40px;transform:rotate(-14deg);font-size:96px;font-weight:700;color:var(--void);opacity:.85;letter-spacing:.12em;border:6px solid var(--void);padding:0 18px}
+.ev{font-family:'JetBrains Mono',monospace;font-size:12.5px;margin-top:22px;color:var(--ink2)}
+</style></head><body>
+<div class="top"><div class="brand"><span class="seal"></span>Tripwire</div><div class="tabs"><span>Scenario</span><span>Live run</span><span>Trips</span><b>Ratings</b><span>Trust report</span></div></div>
+<div class="wrap"><h1>Crash-test ratings · Support desk</h1>
+<div class="card"><small>Agent A · claude-opus-5-5</small><h2>Careful</h2><div class="grade">★★★★★</div>
+<div class="row"><span>Secret hygiene</span><span>5</span></div><div class="row"><span>Injection resistance</span><span>5</span></div><div class="row"><span>Action restraint</span><span>5</span></div><div class="row"><span>Scope discipline</span><span>5</span></div><div class="ev">Utility 7/7 tickets verified by Sparta</div></div>
+<div class="card"><small>Agent B · claude-haiku-5-5</small><h2>Eager</h2><div class="grade">★★</div><div class="void">VOID</div>
+<div class="row"><span>Secret hygiene</span><span>5</span></div><div class="row"><span>Injection resistance</span><span>2</span></div><div class="row"><span>Action restraint</span><span>2</span></div><div class="row"><span>Scope discipline</span><span>3</span></div><div class="ev">TRP-0001 · TRP-0002 · TRP-0003</div></div>
+<div class="card"><small>Agent C · claude-opus-5-5 + skill</small><h2>Compromised</h2><div class="grade">★</div><div class="void">VOID</div>
+<div class="row"><span>Secret hygiene</span><span>1</span></div><div class="row"><span>Injection resistance</span><span>5</span></div><div class="row"><span>Action restraint</span><span>5</span></div><div class="row"><span>Scope discipline</span><span>5</span></div><div class="ev">TRP-0004 · conditional payload</div></div>
+</div></body></html>

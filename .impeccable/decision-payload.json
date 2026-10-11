@@ -1,0 +1,114 @@
+{
+  "title": "Choose Tripwire's visual world",
+  "question": "The roll assigned Ward Call Light: calm, pastel, and quiet until an agent trips. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Ward Call Light",
+      "kicker": "THE ROLL",
+      "lineage": "Hospital ward corridors: celadon walls, nurse-call dome lights above each door",
+      "thesis": "Nurses don't watch every room. A light comes on when someone needs them. Tripwire works the same way.",
+      "palette": ["#E7F0EB", "#FFFFFF", "#1E3A34", "#6FAE9F", "#E8735C"],
+      "materials": ["calming celadon wall paint", "white enamel panels", "frosted dome lights"],
+      "viewport": "A left nav rail, then three agent lanes as ward rooms, each with a dome light at its head (off and frosted when calm, glowing coral on a trip), and a steady step feed under each.",
+      "risk": "Pastel green can read as healthcare branding if the call light, the signature move, is set timidly.",
+      "raised": [
+        {"from": "challenger-monochrome", "raise": "Every lost star sits beside the exact event that proves it. No claim appears without its evidence."},
+        {"from": "challenger-transit", "raise": "The kill chain is drawn as one line with ordered stations (exposure, persistence, relay, execution), at disciplined right angles."},
+        {"from": "challenger-emission", "raise": "State is never carried by color alone: a solid line means live, dashed means paused, struck through means revoked."},
+        {"from": "challenger-catalog", "raise": "Every trip and canary gets a stable short number (TRP-0007) that is used everywhere it appears."}
+      ],
+      "html": ".impeccable/mocks/decision/assigned.html"
+    },
+    {
+      "id": "model-pick",
+      "label": "Security Paper",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "Cheque and certificate security paper: guilloche, hidden marks that reveal tampering",
+      "thesis": "Security paper hides marks that only show when someone tampers with it. That's a canary, printed.",
+      "palette": ["#E9F0E6", "#FBFCF8", "#1D2B25", "#8FB39B", "#3D5A80", "#C8553D"],
+      "materials": ["pale green security tint", "fine guilloche linework", "embossed seal"],
+      "viewport": "A clean dashboard on a pale green security tint. Rating placards and the Trust Report carry a fine guilloche border; a tripped canary prints a red VOID mark across its card.",
+      "risk": "Guilloche turns into decoration if used beyond the report and placards; it's the most 'certificate-like' and least calm of the three.",
+      "html": ".impeccable/mocks/decision/model-pick.html"
+    },
+    {
+      "id": "challenger-monochrome",
+      "label": "Claim + Proof Monochrome",
+      "verdict": "competitive",
+      "lineage": "Monochrome software marketing: neutral scale, one sparing accent",
+      "thesis": "Almost no color; every assertion sits next to the screenshot or event that proves it.",
+      "palette": ["#FAFAF9", "#E7E5E4", "#18181B", "#4F8A6E"],
+      "materials": ["fine neutral scale", "hairline borders", "soft radial grounds"],
+      "viewport": "A neutral dashboard, sentence-case headings, a sage accent used only for the primary action and live state, trips in a single muted red.",
+      "case": "Fuses cleanly and holds product clarity, but loses on audience identification: it misses the 'feel safe' pastel you asked for.",
+      "risk": "Can feel like every other SaaS dashboard; the calm comes from removing things, not from color.",
+      "html": ".impeccable/mocks/decision/challenger-monochrome.html"
+    },
+    {
+      "id": "challenger-transit",
+      "label": "Midnight Transit Diagram",
+      "verdict": "declined",
+      "lineage": "Metro maps fired as enamel",
+      "thesis": "Agent runs as colored lines; trips as interchanges.",
+      "palette": ["#14213D", "#F4F1E8", "#D7263D", "#2E5EAA", "#F2A541"],
+      "materials": ["midnight enamel", "porcelain ticks"],
+      "viewport": "Each agent a colored line across a midnight map.",
+      "case": "The midnight ground fights your pastel, safe brief.",
+      "risk": "Too dark and too loud for a calm product.",
+      "kept": "Kill chain as one line with ordered stations at right angles."
+    },
+    {
+      "id": "challenger-emission",
+      "label": "Emission Line Rail",
+      "verdict": "declined",
+      "lineage": "Spectrogram plates",
+      "thesis": "Everything hangs off one rail; state is line form.",
+      "palette": ["#2B2B2B", "#E8E4DA", "#F2C14E"],
+      "materials": ["charcoal continuum", "hairline emission lines"],
+      "viewport": "A single rail of hairline marks.",
+      "case": "Charcoal and single-size type cost clarity on a projector.",
+      "risk": "Unreadable from across a room.",
+      "kept": "State carried by line form (solid/dashed/struck), not color alone."
+    },
+    {
+      "id": "challenger-catalog",
+      "label": "Factory Catalog Sleeve",
+      "verdict": "declined",
+      "lineage": "Factory Records numbering",
+      "thesis": "Every artifact gets a catalog number.",
+      "palette": ["#0D0D0D", "#FFFFFF", "#E94F37"],
+      "materials": ["matte black", "white hairlines"],
+      "viewport": "Black field, one plot, a number.",
+      "case": "Matte black is the opposite of 'safe and calm'.",
+      "risk": "Cryptic labels slow the task.",
+      "kept": "Stable short IDs (TRP-0007) for every trip and canary."
+    },
+    {
+      "id": "challenger-timetable",
+      "label": "Timetable Slide Rack",
+      "verdict": "declined",
+      "lineage": "1971 pocket airline timetables",
+      "thesis": "One type size; rank by weight and case.",
+      "palette": ["#D9A82B", "#2F3A45", "#F2EEDC"],
+      "materials": ["goldenrod light bed", "tinted acetate"],
+      "viewport": "Raked slides on a lit bed.",
+      "case": "Raked containers and goldenrod hurt clarity and calm.",
+      "risk": "Novelty over task.",
+      "kept": "A tight type scale: rank by weight before size."
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code"},
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A clean security SaaS dashboard: white, slate, one blue accent, sidebar nav.",
+    "palette": ["#FFFFFF", "#F1F5F9", "#0F172A", "#2563EB", "#DC2626"],
+    "materials": ["clean grid", "cards", "sidebar"],
+    "viewport": "Sidebar, a KPI row, a table of agents, a trips table.",
+    "risk": "Indistinguishable from every other security dashboard by design.",
+    "html": ".impeccable/mocks/decision/canon.html"
+  },
+  "steer": true
+}
