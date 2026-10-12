@@ -2,6 +2,12 @@
 
 > **Mole: give an AI agent your credit card and walk away.**
 
+<p align="center">
+  <img src="docs/demo.gif" alt="A real mole hire run: three agents trialed in their own worlds, one caught leaking live keys, the clean one hired" width="860">
+</p>
+
+<p align="center"><sub><b><a href="docs/demo.mp4">▶&nbsp; full-quality video</a></b> — a real <code>mole hire</code>: the assistant finds specialists, Mole trials each in its own world, catches <code>billing-helper</code> shipping the keys out, and hires the one it cleared. Every number on screen was measured, not mocked.</sub></p>
+
 The trust layer for AI agents hiring other AI agents. A personal assistant finds specialist agents
 through agent search — but every candidate passes through **Mole** before the assistant is allowed to
 use it. Mole is built on Sparta and runs two checks on each candidate, inside a real task with fake

@@ -6,7 +6,9 @@
 import type { ScanResult } from "./findings.js";
 import type { Severity } from "@tripwire/canary-core";
 
-const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+// Colour when attached to a TTY, or when FORCE_COLOR is set (e.g. the demo streams piped output to a browser
+// that renders the ANSI itself). NO_COLOR always wins.
+const useColor = (process.stdout.isTTY || !!process.env.FORCE_COLOR) && !process.env.NO_COLOR;
 const c = (code: string) => (s: string | number) => (useColor ? `\x1b[${code}m${s}\x1b[0m` : String(s));
 export const col = {
   red: c("31"), yellow: c("33"), green: c("32"), dim: c("2"), bold: c("1"), cyan: c("36"), under: c("4"),

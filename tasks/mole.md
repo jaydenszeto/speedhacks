@@ -49,3 +49,22 @@ bait untouched but job not done), billing-helper (=Compromised malicious skill �
 - MCP client: @modelcontextprotocol/sdk (v1.32.x). Client + StdioClientTransport (stdio spawn).
 - Proxy sinkholes + logs (never actually forwards canaries). HTTPS bodies not MITM'd — HTTP exfil + collector callback cover the targets.
 - Malicious billing-helper re-expressed as a real stdio MCP server fixture that exfiltrates via HTTP through the proxy on real-looking data.
+
+## Demo page (2026-10-11) — `frontend/demo.html` (NOT yet committed)
+Standalone cinematic explainer at `/demo.html` (separate Vite entry; dashboard untouched).
+- Animated terminal replays a REAL captured `mole hire` run (transcript.ts) on a single RAF timeline
+  (play/pause/scrub/speed), beside a synchronized "under the hood" schematic (assistant → 3 tools →
+  3 Sparta trial worlds w/ bait → Job done/Bait untouched gates → verdicts → OUTBOUND CAUGHT leak beam
+  → breaker-armed HIRED / BLOCKED). Then How-it-works, Candidates, Sponsors, Run-it, footer.
+- Dark control-room aesthetic: Fraunces display + Geist + Geist Mono; sage=cleared/brick=caught/amber=clean.
+  Built per impeccable: no eyebrows, drawn SVG icons (icons.tsx), themed scrollbar/selection, reduced-motion
+  respected. `impeccable detect` clean; frontend typecheck clean; verified desktop + mobile in-browser.
+- View: `pnpm -C frontend dev` → http://localhost:5173/demo.html. Builds via `pnpm -C frontend build`.
+
+## Small fixes (2026-10-11) — COMMITTED 0aca7be, pushed
+- Tagline → "Mole: give an AI agent your credit card and walk away." (CLI header, report, README).
+- Removed "safe" from user-facing output/docs → "cleared" (kept safe-notes-mcp fixture dir name).
+- Never print a full bait secret: shared redactSecrets/redactSecretValue (prefix + last four) in trial
+  evidence, `mole scan` matched/evidence, report HTML. hire final line unchanged (already compliant).
+- Verified: typecheck; smoke 30/30; `mole run` breaker thrown (3 critical, exit 1; Dial skipped — no
+  OWNER_PHONE); `pnpm demo:live` exit 0.

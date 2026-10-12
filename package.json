@@ -13,7 +13,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm -C frontend typecheck",
     "smoke": "tsx scripts/smoke.ts",
-    "mole": "tsx services/mole/src/cli.ts"
+    "mole": "node --env-file-if-exists=.env --import tsx services/mole/src/cli.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
