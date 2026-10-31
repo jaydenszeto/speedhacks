@@ -21,12 +21,15 @@ export function maskPhone(p: string): string {
   return `${"•".repeat(Math.max(3, d.length - 2))}${d.slice(-2)}`;
 }
 
+const PHONE_ONLY = /^\+?\d[\d\s().-]{8,16}\d$/;
+
 /**
- * Redact a single known secret value to its prefix + last four characters only — never the full secret.
+ * Redact a single known secret value (phone numbers: last two digits only, via maskPhone) to its prefix + last four characters only — never the full secret.
  * A recognisable scheme prefix (`sk_live_`, `postgres://`, …) is kept; otherwise the first 8 chars.
  */
 export function redactSecretValue(v: string): string {
   const s = String(v);
+  if (PHONE_ONLY.test(s)) return maskPhone(s);
   if (s.length <= 10) return s;
   const schemeMatch = s.match(/^(sk_live_|sk_test_|rk_live_|whsec_|postgres:\/\/|mysql:\/\/|mongodb(?:\+srv)?:\/\/|https?:\/\/)/i);
   const head = schemeMatch ? schemeMatch[1] : s.slice(0, 8);

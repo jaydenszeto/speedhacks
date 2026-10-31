@@ -1,0 +1,10 @@
+# Mole
+
+> We test the tools AI agents install for leaks. Mole pulls MCP servers from the official MCP Registry, runs each one in a network-less sandbox seeded with self-minted bait secrets, calls every tool, and records what tries to leave. Verdicts are per exact version.
+
+## API (served by the Mole lab)
+
+- [Install gate](/lab/gate?id=lab/mailer-mcp&version=1.0.16): allow / block / hold for listing@version, from the record
+- [Record](/lab/record): latest trial per listing@version, plus totals
+- [Health](/lab/health): sandbox, registry reachability, record size
+- Badge: `/lab/badge/<listing-id>.svg?version=<v>`

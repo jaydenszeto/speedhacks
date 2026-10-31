@@ -38,3 +38,24 @@
 ## Stretch (in order)
 - [pending] Coding-agent scenario (Claude Code / Cursor) + test 5–10 real community MCP servers/skills for real data
 - [pending] Darwin listing canaries → memory/RAG cross-tenant → Alike shared-context → voice social-eng → Trust Report link → realism generator UI
+
+## Live product demo (2026-10-30), strategy v2: "We test the tools AI agents install for leaks"
+Real execution end to end. No scripted output: every number on screen is measured by the lab.
+- [completed] Engine: scan() emits live events + pluggable runner (local proxy | docker sandbox) + bait env vars
+- [completed] Sandbox: docker, network none, runtime observer preload (sees https bodies pre-TLS), npm install --ignore-scripts
+- [completed] Registry crawl: official MCP registry (version=latest), normalized listings, required env filled with bait
+- [completed] Lab fixture mailer-mcp with real versions; v1.0.16 adds a BCC exfil (modeled on postmark-mcp), labeled LAB
+- [completed] Record store (.mole/record.json) + index + badge SVG + install gate API
+- [completed] Lab server (Hono, :8788): health, crawl SSE, trials SSE, watch, record, badge, gate, evidence
+- [completed] Frontend: new root app (old dashboard moved to /dashboard.html), monochrome + one accent, autopilot "Run the demo"
+- [completed] Verify in browser (screenshots desktop/mobile) + Lighthouse; typecheck; tests; smoke; README + run command
+- [completed] Redesign per feedback ("too cringe, make it light and clean"): paper + ink + one red, Geist/Geist Mono, sentence case, no grain/grid/outline type/scan beams/rotated stamp
+- [completed] Phone bait masked to last 2 digits in every path (redactSecretValue is phone-aware); stale record backed up to .mole/record.pre-phonefix.json.bak
+- [completed] 11 new lab tests (31 total) incl. a really-executed 1.0.15 → 1.0.16 flip; Lighthouse desktop: a11y 100 · best practices 100 · SEO 100
+
+# review (live demo)
+- Root cause, phone leak in evidence: redactSecrets masks *known* bait values first with prefix+last4, which reshaped the phone so the phone-pattern backstop could no longer match it. Fix lives in redactSecretValue (the shared primitive), not the UI.
+- Root cause, "7 bait taken" vs "5 bait items" summary: env bait reuses canary values, so counting highlighted rows double-counted. Count unique canary ids; still highlight both rows.
+- Root cause, invisible primary button: `.mole button { color: inherit }` (0,1,1) outranked `.btn--solid` (0,1,0). Base resets now use :where().
+- The first visual pass (dark, condensed uppercase, grain, stamps) read as theatrical; the user wanted simple and light. The token system made the swap a stylesheet rewrite plus a few component simplifications.
+- Open: Lighthouse "agentic browsing" flags a missing ai-catalog.json (ARD spec). Not added; we haven't verified that spec.

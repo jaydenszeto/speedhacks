@@ -145,17 +145,48 @@ The CLI is the product; the dashboard is a secondary view of the same engine.
 services/
   mole/                THE CLI — hire · pick · scan · run · report · doctor
     src/               trial engine · candidate discovery · proxy (sinkhole) · collector · formatter · report
-    fixtures/          billing-helper-mcp (malicious) · safe-notes-mcp (benign) — real MCP servers for `mole scan`
+    fixtures/          billing-helper-mcp (malicious) · safe-notes-mcp (benign) · mailer-mcp (versioned, flips at 1.0.16)
+    src/lab/           live-demo lab: registry crawl · docker sandbox runner · record · gate · badge · Hono server (:8788)
+    sandbox/           observe.cjs — the in-container egress observer (preloaded via NODE_OPTIONS)
   orchestrator/        world build + bait minting · event bus · egress monitor · circuit breaker · trip recorder · world tools
   agent-harness/       live agents via the Agent SDK · candidate specs · deterministic twins · malicious skill
   scoring/             "job done" verified against the Sparta diff
 packages/
   canary-core/         bait types · id minting · realism generators · egress decode · registry
   adapters/            sparta · darwin · dial · keewano · github — each live + mock
-frontend/              Vite + React + TS dashboard — a visual replay of the same recorded events
+frontend/              Vite + React + TS. `/` is the live lab demo (src/lab); /dashboard.html and /demo.html are the older replay views
 scripts/
+  demo-web.ts          `pnpm demo:web`: lab server + Vite with health waits
   smoke.ts             headless: scan both fixtures + pick the three candidates (deterministic) + the engine loop
 ```
+
+---
+
+## Live product demo: `pnpm demo:web`
+
+> **We test the tools AI agents install for leaks.**
+
+One page that runs the whole product for real, end to end. Press **Run the demo** (or `R`) and it walks every step,
+waiting on each one to actually finish:
+
+| # | Step | What really happens |
+|---|------|---------------------|
+| 01 | **Read the marketplace** | Crawls the official MCP Registry (`registry.modelcontextprotocol.io/v0/servers`) page by page and parses how each listing installs. npm-over-stdio servers are runnable; remote endpoints are indexed, not executed. |
+| 02 | **Put it on trial** | A registry server is `npm install --ignore-scripts`'d inside a container, then run with `--network none --cap-drop ALL`, its required env keys filled with bait Mole minted itself. An observer preloaded into Node records every http/https/fetch attempt (bodies captured before TLS). Every tool is called. |
+| 03 | **Keep the receipts** | The request that carried the bait, which tool sent it, where it went. Bait values stay redacted. The full evidence pack is JSON at `/lab/trials/:id`. |
+| 04 | **Watch every release** | Re-trials each published version, oldest first. The lab's `mailer-mcp` mirrors the 2025 postmark-mcp incident: 15 clean versions, then 1.0.16 BCCs every email out. |
+| 05 | **One record per version** | Every trial lands in `.mole/record.json`, keyed by listing@version. Badges are served live from it. |
+| 06 | **Gate the install** | `GET /lab/gate?id=&version=` gives an agent **allow** (cleared for this exact version), **block** (caught) or **hold** (never tested). |
+
+```bash
+pnpm demo:web                # lab server (:8788) + Vite (:5173), waits for /health, prints what the lab can do
+pnpm lab                     # just the lab server
+```
+
+Docker is needed for registry trials (the lab pulls `node:22-slim` on start). Without it, the planted lab cases
+still run, and the top bar shows `sandbox unavailable`. Anything marked **lab · planted** is a test case we wrote,
+labeled everywhere it appears and never mixed into registry numbers. The page's one rule: **the only red on it is a
+leak**. Lab API: `services/mole/src/lab/server.ts` (route list at the top of the file). UI: `frontend/src/lab/`.
 
 ---
 
