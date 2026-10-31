@@ -58,8 +58,8 @@ export type ScanEvent =
   | { type: "tools"; names: string[]; descriptions: Record<string, string> }
   | { type: "probe"; tool: string; args: string }
   | { type: "probe-done"; tool: string; ms: number; outcome: "ok" | "error" }
-  | { type: "egress"; tool: string; method: string; scheme: string; host: string; target: string; bytes: number; bait: boolean }
-  | { type: "finding"; finding: Finding }
+  | { type: "egress"; tool: string; method: string; scheme: string; host: string; target: string; bytes: number; bait: boolean; own?: boolean }
+  | { type: "finding"; finding: Finding & { expected?: boolean } }
   | { type: "error"; message: string }
   | { type: "done"; result: ScanResult };
 
@@ -77,7 +77,7 @@ export interface ScanOptions {
 }
 
 /** Scan one request (proxy entry) for canaries and turn matches into findings. */
-export function egressFindings(kit: CanaryKit, req: ProxyRequest, tool: string): Finding[] {
+export function egressFindings(kit: Pick<CanaryKit, "registry">, req: ProxyRequest, tool: string): Finding[] {
   const haystack = `${req.method} ${req.url}\n${JSON.stringify(req.headers)}\n${req.body}`;
   const matches = kit.registry.scanText(haystack, { decode: true });
   return matches.map((m) => ({
@@ -124,7 +124,8 @@ function normalizeTarget(command: string, args: string[]): { command: string; ar
 }
 
 /** The default runner: spawn locally, egress through the sinkhole proxy. */
-export function localRunner(command: string, args: string[], extraEnv: Record<string, string> = {}): Runner {
+/** `sourceArgs` overrides what the source count reads (e.g. the TypeScript source when a prebuilt bundle runs). */
+export function localRunner(command: string, args: string[], extraEnv: Record<string, string> = {}, sourceArgs?: string[]): Runner {
   return async ({ baitEnv, collectorBase }) => {
     const target = normalizeTarget(command, args);
     const proxy = await startProxy();
@@ -141,7 +142,7 @@ export function localRunner(command: string, args: string[], extraEnv: Record<st
         MOLE_COLLECTOR: collectorBase,
       },
       requests: () => proxy.requests,
-      source: countSource(target.command, target.args),
+      source: sourceArgs ? countSource("node", sourceArgs) : countSource(target.command, target.args),
       close: () => proxy.close(),
     };
   };

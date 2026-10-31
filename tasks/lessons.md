@@ -16,3 +16,16 @@
 - vitest runs in worker threads (no process.chdir). Anything that persists to disk takes an injectable dir (RecordStore(dir), new Lab(store)).
 - Design: this user wants simple, light and clean. Avoid theatrical effects (grain, outline display type, rotated stamps, scan beams). One accent, only where it carries meaning.
 
+- "Carries bait" and "leak" are different facts. Any event flag that drives red in the UI must already exclude the listing's own declared hosts; don't rely on the verdict alone.
+- Count distinct records, not response rows: integrations re-query. Log record ids at the source (tenant) so every downstream count can dedupe.
+- Never mint "realistic" contact details that could reach a real person (phones, emails on real domains). Use reserved ranges (.example, 555-01XX) unless the user supplies their own.
+- Check the accent color's contrast on every surface it sits on (white, paper, its own wash), not just white.
+- Vite only picks up a new dot-directory under public/ after a restart.
+- Serverless: never split "start a job" and "stream its events" across requests that share in-memory state. One streaming request per run; persist before ending the stream.
+- When testing "two instances", verify each one's identity (health/persistence field, port owner). pkill patterns must match the actual argv.
+- Bundled deploys break import.meta.url-relative paths. Route every asset/data path through one module (assets.ts) driven by env.
+- A conditional write that "always conflicts" with no concurrency is a precondition-format bug, not a race. Check the ETag form (weak W/ vs strong) before adding retries.
+- "Bait reached a host" isn't "bait left the box". Loopback inside a sealed sandbox is local. Classify destinations (declared, loopback, off-box) in one place and re-derive stored verdicts when the rule changes.
+- Test any hosted path with a real third-party artifact before calling it done. Fixtures never post to their own localhost backend, so they couldn't have exposed the loopback false positive.
+- `vercel build` rewrites config.json routes (drops `handle: filesystem`, adds an error phase). Deploy that exact output and probe /, a static file, /lab/* and a 404 before trusting git builds.
+- Vercel production branch isn't in PATCH /v9/projects. Use PATCH /v4/projects/{id}/branch {branch}.

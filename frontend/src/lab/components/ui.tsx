@@ -5,11 +5,17 @@ import type { Verdict } from "../types";
 
 export const EASE_OUT = [0.16, 1, 0.3, 1] as const;
 
+/** Where an expected (non-leak) finding went, in words: loopback stays inside the sandbox; anything else is the listing's own service. */
+export function expectedWhere(destination: string): string {
+  const h = destination.replace(/\s*\(TLS\)$/, "").toLowerCase().replace(/^\[([^\]]+)\].*$/, "$1").replace(/:\d+$/, "");
+  return h === "localhost" || h === "::1" || h === "0.0.0.0" || /^127(\.\d{1,3}){3}$/.test(h) ? "localhost, inside the sandbox" : "its own declared service";
+}
+
 export function Mark({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
       <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2.5" />
-      <circle cx="16" cy="16" r="5" fill="#E0321C" />
+      <circle cx="16" cy="16" r="5" fill="#C62A14" />
     </svg>
   );
 }

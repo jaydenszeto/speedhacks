@@ -4,6 +4,9 @@ import { useAutopilot, STEPS } from "./autopilot";
 import { Evidence } from "./components/Evidence";
 import { Gate } from "./components/Gate";
 import { Hero } from "./components/Hero";
+import { Identities } from "./components/Identities";
+import { Integrations } from "./components/Integrations";
+import { Products } from "./components/Products";
 import { Marketplace } from "./components/Marketplace";
 import { Record } from "./components/Record";
 import { ReleaseWatch } from "./components/ReleaseWatch";
@@ -32,7 +35,7 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement || e.metaKey || e.ctrlKey) return;
       if (e.key.toLowerCase() === "r" && !pilot.running && health) void run();
       if (e.key === "Escape" && pilot.running) stop();
     };
@@ -52,6 +55,16 @@ export function App() {
           </div>
         </div>
       )}
+      {health?.host === "vercel" && (
+        <div className="wrap">
+          <p className="hosted">
+            Hosted demo. Everything here runs for real, and the record is shared by every visitor.{" "}
+            {health.sandbox.ready
+              ? "Registry servers are installed and trialed in a fresh Vercel Sandbox microVM each time, sealed to no network before they run."
+              : <>Registry trials need a sandbox this host doesn't have right now, so they run locally: <code>pnpm demo:web</code>.</>}
+          </p>
+        </div>
+      )}
       <main>
         <Hero onRun={() => void run()} onSkip={() => scrollToId("market")} />
         <Marketplace />
@@ -60,6 +73,13 @@ export function App() {
         <ReleaseWatch />
         <Record />
         <Gate />
+        <div className="wrap part">
+          <p className="part__k">Same method, every surface</p>
+          <p className="part__t">Plant something traceable. Let a third party run. Watch where it goes. <span>It works for anything you hand your data to.</span></p>
+        </div>
+        <Integrations />
+        <Identities />
+        <Products />
       </main>
       <Footer />
 
@@ -92,7 +112,7 @@ function Footer() {
       <div className="wrap foot__grid">
         <div>
           <div className="wordmark" style={{ marginBottom: 16 }}><Mark /> Mole</div>
-          <p>We test the tools AI agents install for leaks.</p>
+          <p>We test what you hand your data to: the tools AI agents install, the apps you connect with OAuth, the vendors you sign up with.</p>
           <p>Mole never prints a full bait value, and never calls anything clean in general. A verdict covers one version, the tools it exposed, and the probes we ran.</p>
         </div>
         <div>
@@ -103,7 +123,7 @@ function Footer() {
         </div>
         <div>
           <h3>What's planted</h3>
-          <p>Anything marked lab is a test case we wrote. mailer-mcp mirrors the postmark-mcp incident; billing-helper and safe-notes are the positive and negative controls.</p>
+          <p>Anything marked lab is a test case we wrote. mailer-mcp mirrors the postmark-mcp incident; billing-helper and safe-notes are the positive and negative controls. helpdesk-copilot is shaped like the 2025 Drift OAuth incident; the identity vendors are planted too.</p>
           <p>Lab cases run locally behind a sinkhole proxy. Their trials are as real as any other.</p>
         </div>
       </div>

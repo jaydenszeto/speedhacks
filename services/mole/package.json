@@ -20,6 +20,8 @@
     "@tripwire/canary-core": "workspace:*",
     "@tripwire/orchestrator": "workspace:*",
     "@tripwire/scoring": "workspace:*",
+    "@vercel/blob": "^2.8.2",
+    "@vercel/sandbox": "^3.9.1",
     "hono": "^4.13.13",
     "zod": "^4.1.13"
   },

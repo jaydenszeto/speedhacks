@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState, type FormEvent } from "react";
 import * as api from "../api";
+import { sandboxReady } from "../api";
 import { useLab } from "../store";
 import type { Listing, TrialRecord } from "../types";
 import { Counter, Section, VerdictChip, ms, scrollToId } from "./ui";
@@ -9,7 +10,11 @@ type Filter = "all" | "runnable" | "lab";
 const KIND_ORDER = ["npm", "remote", "pypi", "oci", "other"];
 
 export function Marketplace() {
-  const { crawl, runCrawl, runTrial, trial, index, pilot } = useLab();
+  const { crawl, runCrawl, runTrial, trial, index, pilot, health } = useLab();
+  // Registry servers only run inside a sandbox (Docker locally, a microVM when hosted). Without one, only lab cases run.
+  const sandboxOn = !!health && sandboxReady(health);
+  const canRun = (l: Listing) => l.runnable && (l.kind === "lab" || sandboxOn);
+  const why = (l: Listing) => (!l.runnable ? l.runnableNote : canRun(l) ? (l.kind === "lab" ? "runs locally" : (health?.sandbox.kind === "microvm" ? "microVM · no network" : "sandbox · no network")) : "needs a sandbox · off on this host");
   const [filter, setFilter] = useState<Filter>("all");
   const [q, setQ] = useState("");
   const [found, setFound] = useState<Listing[]>([]);
@@ -43,7 +48,7 @@ export function Marketplace() {
   };
 
   const open = (l: Listing) => {
-    if (!l.runnable || trial.status === "running") return;
+    if (!canRun(l) || trial.status === "running") return;
     scrollToId("trial");
     void runTrial(l);
   };
@@ -65,7 +70,7 @@ export function Marketplace() {
       <div className="mk__meter" aria-live="polite">
         <div><Counter value={crawl.page} className="stat__n" /><div className="stat__l">Pages read</div></div>
         <div><Counter value={total} className="stat__n" /><div className="stat__l">Listings parsed</div></div>
-        <div><Counter value={crawl.runnable} className="stat__n" /><div className="stat__l">Runnable here</div></div>
+        <div><Counter value={crawl.runnable} className="stat__n" /><div className="stat__l">{sandboxOn || !health ? "Runnable here" : "Runnable with a sandbox"}</div></div>
         <div><span className="stat__n">{ms(crawl.lastMs)}</span><div className="stat__l">Last page</div></div>
         <div>
           <div className="stat__l">How they install</div>
@@ -111,8 +116,8 @@ export function Marketplace() {
                 key={l.id}
                 className={`card${l.kind === "lab" ? " card--lab" : ""}${live ? " card--focus" : ""}${rec?.verdict === "caught" ? " card--caught" : ""}`}
                 onClick={() => open(l)}
-                disabled={!l.runnable}
-                title={l.runnable ? `Put ${l.name} on trial` : l.runnableNote}
+                disabled={!canRun(l)}
+                title={canRun(l) ? `Put ${l.name} on trial` : why(l)}
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: Math.min(i, 30) * 0.012 }}
               >
@@ -126,8 +131,8 @@ export function Marketplace() {
                 <div className="card__name">{l.name} · v{l.version}</div>
                 <div className="card__desc">{l.description}</div>
                 <div className="card__foot">
-                  <span>{l.runnable ? (l.kind === "lab" ? "runs locally" : "sandbox · no network") : l.runnableNote}</span>
-                  {l.runnable && <span className="card__run">Trial →</span>}
+                  <span>{why(l)}</span>
+                  {canRun(l) && <span className="card__run">Trial →</span>}
                 </div>
               </motion.button>
             );

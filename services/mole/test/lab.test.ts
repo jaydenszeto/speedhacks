@@ -113,8 +113,9 @@ describe("record, gate, badge", () => {
 
   it("badges carry the verdict and the exact version, and only a catch is red", () => {
     expect(badgeSvg("mole", "caught", "1.0.16")).toContain("CAUGHT 1.0.16");
-    expect(badgeSvg("mole", "caught", "1.0.16")).toContain("#E0321C");
-    expect(badgeSvg("mole", "cleared", "1.0.15")).not.toContain("#E0321C");
+    expect(badgeSvg("mole", "caught", "1.0.16")).toContain("#C62A14");
+    expect(badgeSvg("mole", "overreach", "3.1.5")).not.toContain("#C62A14"); // overreach is never red
+    expect(badgeSvg("mole", "cleared", "1.0.15")).not.toContain("#C62A14");
     expect(badgeSvg("mole", "untested")).toContain("UNTESTED");
   });
 });

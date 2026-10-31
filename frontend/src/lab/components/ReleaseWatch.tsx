@@ -38,7 +38,7 @@ export function ReleaseWatch() {
                 animate={r ? { scale: [1.35, 1] } : { scale: 1 }}
                 transition={{ duration: 0.6, ease: EASE_OUT }}
               >
-                {r?.verdict === "caught" ? "!" : r?.verdict === "cleared" ? "✓" : r?.verdict === "inconclusive" ? "?" : ""}
+                {r?.verdict === "caught" ? "!" : r?.verdict === "cleared" ? "✓" : r?.verdict === "overreach" ? "+" : r?.verdict === "inconclusive" ? "?" : ""}
               </motion.div>
               <div className="node__v">v{v}</div>
               <div className="node__s">{state === "pending" ? "not yet" : state === "running" ? "on trial" : state}</div>

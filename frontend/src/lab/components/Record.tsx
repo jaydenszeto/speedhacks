@@ -18,16 +18,17 @@ export function Record() {
       cap="Every trial lands in a public record keyed by artifact and exact version. Maintainers embed the badge; buyers and agents query the same record."
       aside={<button className="btn btn--sm btn--ghost" onClick={() => void refreshRecord()}>Refresh</button>}
     >
-      <div className="mk__meter" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+      <div className="mk__meter" style={{ gridTemplateColumns: "repeat(5, 1fr)" }}>
         <div><Counter value={stats?.artifacts ?? 0} className="stat__n" /><div className="stat__l">Versions on record</div></div>
         <div><Counter value={stats?.cleared ?? 0} className="stat__n" /><div className="stat__l">Cleared</div></div>
         <div><Counter value={stats?.caught ?? 0} className={`stat__n${stats?.caught ? " leak" : ""}`} /><div className="stat__l">Caught</div></div>
+        <div><Counter value={stats?.overreach ?? 0} className="stat__n" /><div className="stat__l">Overreach</div></div>
         <div><Counter value={stats?.inconclusive ?? 0} className="stat__n" /><div className="stat__l">Inconclusive</div></div>
       </div>
       <div className="rec">
         <div className="panel rec__tbl">
           <table className="tbl">
-            <thead><tr><th>Artifact</th><th>Version</th><th>Verdict</th><th>Tools</th><th>Ran</th><th>When</th></tr></thead>
+            <thead><tr><th>Artifact</th><th>Version</th><th>Verdict</th><th>Probes</th><th>Ran</th><th>When</th></tr></thead>
             <tbody>
               {rows.length === 0 && <tr><td colSpan={6} className="faint">The record is empty. Run a trial.</td></tr>}
               {rows.map((r) => (
@@ -39,8 +40,8 @@ export function Record() {
                   <td>{r.listingId}{r.lab && <span className="faint"> · lab</span>}</td>
                   <td className="ver">{r.version}</td>
                   <td><VerdictChip verdict={r.verdict} /></td>
-                  <td>{r.toolsFound}</td>
-                  <td className="dim">{r.runner === "sandbox" ? "sandbox" : "local"} · {ms(r.durationMs)}</td>
+                  <td>{r.kind === "integration" ? `${r.apiCalls ?? r.probes} API` : `${r.toolsFound} tools`}</td>
+                  <td className="dim">{r.runner === "sandbox" ? "sandbox" : r.kind === "integration" ? "bait tenant" : "local"} · {ms(r.durationMs)}</td>
                   <td className="dim">{ago(r.startedAt)}</td>
                 </tr>
               ))}

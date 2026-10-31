@@ -12,21 +12,27 @@
 import { execFile, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import type { ProxyRequest } from "../proxy.js";
 import type { Runner } from "../scan.js";
 import { countSource } from "../sourcecount.js";
+import { OBSERVER, dataDir } from "./assets.js";
+import { binFromPackageJson, readEgress, safeSpec } from "./egress.js";
+import { microvmAvailable } from "./microvm.js";
+
+export { readEgress };
 
 const exec = promisify(execFile);
 export const SANDBOX_IMAGE = "node:22-slim";
-const HERE = fileURLToPath(new URL(".", import.meta.url));
-const OBSERVER = resolve(HERE, "../../sandbox/observe.cjs");
-const ROOT = join(process.cwd(), ".mole", "sandbox");
+const ROOT = join(dataDir(), "sandbox");
 
-export interface SandboxStatus { docker: boolean; image: boolean; detail: string }
+/**
+ * Which sandbox this host trials registry servers in: Docker when it's running (local dev), else a Vercel Sandbox
+ * microVM (the hosted demo), else none. `ready` is what the UI gates registry trials on.
+ */
+export interface SandboxStatus { kind: "docker" | "microvm" | "none"; ready: boolean; docker: boolean; image: boolean; detail: string }
 
-export async function sandboxStatus(): Promise<SandboxStatus> {
+export async function dockerStatus(): Promise<{ docker: boolean; image: boolean; detail: string }> {
+  if (process.env.VERCEL) return { docker: false, image: false, detail: "no docker on Vercel Functions" };
   try {
     await exec("docker", ["info", "--format", "{{.ServerVersion}}"], { timeout: 8000 });
   } catch {
@@ -40,11 +46,18 @@ export async function sandboxStatus(): Promise<SandboxStatus> {
   }
 }
 
+export async function sandboxStatus(): Promise<SandboxStatus> {
+  const d = await dockerStatus();
+  if (d.docker && d.image) return { kind: "docker", ready: true, ...d };
+  if (microvmAvailable()) return { kind: "microvm", ready: true, ...d, detail: "Vercel Sandbox microVM · one per trial" };
+  return { kind: "none", ready: false, ...d };
+}
+
 let pulling: Promise<void> | undefined;
 /** Pull the sandbox image once (in the background at lab start). */
 export function ensureImage(): Promise<void> {
   pulling ??= (async () => {
-    const s = await sandboxStatus();
+    const s = await dockerStatus();
     if (!s.docker || s.image) return;
     await exec("docker", ["pull", SANDBOX_IMAGE], { timeout: 300000 });
   })().catch((e) => { pulling = undefined; throw e; });
@@ -64,16 +77,12 @@ const slug = (pkg: string, version: string) => `${pkg.replace(/[@/]/g, "_")}@${v
 
 function resolveBin(hostDir: string, pkg: string): string | undefined {
   const pjPath = join(hostDir, "node_modules", pkg, "package.json");
-  if (!existsSync(pjPath)) return undefined;
-  const pj = JSON.parse(readFileSync(pjPath, "utf8")) as { bin?: string | Record<string, string>; main?: string };
-  const short = pkg.split("/").pop()!;
-  const rel = typeof pj.bin === "string" ? pj.bin : pj.bin?.[short] ?? (pj.bin ? Object.values(pj.bin)[0] : pj.main);
-  return rel ? join("node_modules", pkg, rel) : undefined;
+  return existsSync(pjPath) ? binFromPackageJson(JSON.parse(readFileSync(pjPath, "utf8")), pkg) : undefined;
 }
 
 /** Install a package inside a container (scripts disabled). Streams npm's output lines to onLog. */
 export async function installPackage(pkg: string, version: string, onLog: (line: string) => void = () => undefined): Promise<Installed> {
-  if (!/^(@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*$/i.test(pkg) || !/^[\w.+-]+$/.test(version)) throw new Error(`refusing unusual package spec ${pkg}@${version}`);
+  if (!safeSpec(pkg, version)) throw new Error(`refusing unusual package spec ${pkg}@${version}`);
   await ensureImage();
   const hostDir = join(ROOT, "pkgs", slug(pkg, version));
   let rel = resolveBin(hostDir, pkg);
@@ -96,20 +105,6 @@ export async function installPackage(pkg: string, version: string, onLog: (line:
     if (!rel) throw new Error(`${pkg} has no runnable bin`);
   }
   return { pkg, version, hostDir, binInContainer: `/pkg/${rel}`, binOnHost: join(hostDir, rel) };
-}
-
-/** Read the observer's egress log back as proxy requests (re-read each call; the file is small). */
-export function readEgress(file: string): ProxyRequest[] {
-  if (!existsSync(file)) return [];
-  const out: ProxyRequest[] = [];
-  for (const line of readFileSync(file, "utf8").split("\n")) {
-    if (!line.trim()) continue;
-    try {
-      const o = JSON.parse(line) as Partial<ProxyRequest>;
-      out.push({ at: o.at ?? Date.now(), scheme: o.scheme === "https" ? "https" : "http", method: o.method ?? "GET", url: o.url ?? "", host: o.host ?? "", headers: o.headers ?? {}, body: o.body ?? "" });
-    } catch { /* partial line */ }
-  }
-  return out;
 }
 
 /** A Runner that executes an installed package in a locked-down, network-less container. */

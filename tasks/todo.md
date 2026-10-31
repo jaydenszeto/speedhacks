@@ -59,3 +59,48 @@ Real execution end to end. No scripted output: every number on screen is measure
 - Root cause, invisible primary button: `.mole button { color: inherit }` (0,1,1) outranked `.btn--solid` (0,1,0). Base resets now use :where().
 - The first visual pass (dark, condensed uppercase, grain, stamps) read as theatrical; the user wanted simple and light. The token system made the swap a stylesheet rewrite plus a few component simplifications.
 - Open: Lighthouse "agentic browsing" flags a missing ai-catalog.json (ARD spec). Not added; we haven't verified that spec.
+
+## Expansion beyond MCP (2026-10-30): same method, every surface
+Plant something traceable, let a third party run, watch where it goes. Three new surfaces, all really executed.
+- [completed] Contain-mode observer (MOLE_CONTAIN / MOLE_SINKHOLE): host-run code keeps allowed hosts, everything else is logged with its body and answered locally (fetch → 202, http(s) → sinkhole)
+- [completed] Bait tenant (tenant.ts): Salesforce-shaped REST API (SOQL subset, sobjects read/write), planted accounts/contacts/users/deals/cases with pasted keys, bait OAuth token, per-call log with distinct record ids
+- [completed] Integration trials (integrations.ts) + planted helpdesk-copilot 3.1.0 / 3.1.5 / 3.2.0 → cleared / overreach / caught; new verdict "overreach" (gate: hold); reuses record, watch, gate, badge
+- [completed] Planted identities (identities.ts) + vendor world fixture: per-vendor identity, strong-field matching (never names), fictional 555-01XX phones by default; lab attributes lab-crm (broker list) and lab-ai-assistant (completions)
+- [completed] Products (products.ts): review report HTML (+ ?embed=1), feed mole-feed/1 (JSON/JSONL), behavioral BOM mole-bbom/1 (package.json / MCP config / list)
+- [completed] CLI: `mole identities mint|list|check`, `mole bom`
+- [completed] Frontend: sections 07 Integrations, 08 Identities, 09 Products; overreach styling (dashed ink, never red); autopilot steps 8–10 (full run 48s live)
+- [completed] 21 new tests (52 total) incl. really-executed integration flip, contain mode, identity lab; typecheck, smoke, build green
+- [completed] Lighthouse desktop + mobile: a11y 100 · SEO 100 · best practices 96 (only failure: errors from the Phantom wallet browser extension, not the page)
+- [completed] README, llms.txt, server route list
+- [pending] ARD discovery manifest (/.well-known/ai-catalog.json): the validator wants specVersion "1.0" and an absolute `url`; needs a real public domain first
+
+# review (expansion)
+- Root cause, own-service traffic drawn in red: scan() flags any request that carries bait, but it doesn't know a listing's declared hosts. The lab now relabels those events `own` (in its push wrapper for MCP trials, at the source for integrations), so the "only red is a leak" rule holds in every view, not just in the verdict.
+- Root cause, "read 12 of 6 contacts": the tenant counted rows per response, and 3.2.0 queries Contact twice. Calls now carry record ids and every count is distinct records.
+- Root cause, red text failing contrast (4.09:1 on the leak wash): the accent was tuned on white. Darkened the token to #c62a14 (5.1:1 on the wash, 5.6:1 on white) everywhere: CSS, mark, favicon, badge, report.
+- Identity phones: a random realistic number could belong to a real person who'd then get the spam. Defaults are the NANP fictional 555-01XX block; `--phone` takes a number the user controls.
+
+## Hosted demo on Vercel (2026-10-31)
+- [completed] Lab API split: app.ts (routes) + server.ts (local) + vercel.ts (function entry)
+- [completed] Single-request streams (/lab/trials/run, /lab/watch/run, /lab/identities/stream); UI switched to them
+- [completed] Shared state across instances: Vercel Blob mirror for record + identity ledger (union merge, If-Match retries)
+- [completed] assets.ts: fixtures run prebuilt JS in the bundle (MOLE_ASSETS), data in /tmp (MOLE_DATA); source counts still read the .ts
+- [completed] scripts/build-vercel.ts (Build Output API) + `pnpm build:vercel`; verified the bundle standalone (no tsx, no repo, empty env) and cross-instance Blob sharing before deploying
+- [completed] No-Docker honesty: marketplace marks registry servers "needs the Docker sandbox", autopilot skips with a stated reason, hosted banner
+- [completed] Deployed: https://mole-demo.vercel.app; every autopilot step exercised against production (crawl, trial, 6-version watch, gate, integrations, identities, feed, BOM, report, badge)
+- [completed] 3 new tests (55 total): merge semantics for record + ledger, prebuilt path mapping
+- [completed] Browser QA of the hosted autopilot via chrome-devtools: all steps ran against production, including a registry trial in a microVM
+- [completed] Registry sandbox trials on the hosted demo: Vercel Sandbox microVMs (microvm.ts + microvm-runner.ts), npm-only network for install, deny-all before run, always stopped
+- [completed] Hosted release watch on a real registry server (domdomegg/filesystem-mcp 1.2.1 → 1.3.0, 3 microVMs, 27s)
+- [completed] Loopback egress is local, not a leak; stored trials re-derived on load (reclassify)
+- [completed] Blob persistence fix: weak ETags broke every write from a fresh instance (strongEtag)
+- [completed] Deploy-on-push: repo connected, production branch = mole-live-demo, vercel.json runs `pnpm build:vercel`; verified with `vercel build` + deploy of that output
+- [completed] Tests: microvm.test.ts (protocol, bin resolution, spec guard, runner bundle, loopback rules; live microVM catch + clear), persist.test.ts (ETag; live two-instance Blob)
+- [pending] Merge mole-live-demo → main, then move the production branch back to main if wanted
+
+# review (hosting)
+- Root cause, records silently not saving on Vercel since the first deploy's warm instances: Blob serves larger bodies compressed with a weak ETag (W/"…"). If-Match only takes the strong form, so every write after a fresh read failed with a misleading "after concurrent writes". It worked in the first test only because the blob didn't exist yet (allowOverwrite path). Fix: strongEtag(). A live test now fails without the fix.
+- Root cause, a real registry server marked "caught" for posting bait to 127.0.0.1:5100 (its own default local backend): egress classification only knew "declared domain". Loopback can't leave a sealed sandbox, so it's local. The rule lives in record.ts and is re-applied to stored records, so the bad row corrected itself.
+- The microVM runner runs the whole scan inside the VM rather than bridging stdio across the API. One process boundary, the same scan() code, and only redacted events leave the VM.
+- Root cause the naive port would have hit: "start" (POST) and "follow" (GET SSE) were separate requests holding in-memory state. On serverless they can land on different instances. Fix: one streaming request per run, and the stream only ends after the record is saved.
+- An earlier cross-instance test was a false pass: `pkill -f "molefn/serve.mjs"` didn't match `node serve.mjs`, so both "instances" were the same old process. Caught because it reported persistence "local". Always check the health endpoint says what you think is running.

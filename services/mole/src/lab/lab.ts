@@ -2,20 +2,25 @@
  * The lab: Mole's trial orchestrator behind the live demo.
  *
  *   trials   one listing@version through scan(): planted bait, every tool probed, every outbound attempt observed.
- *            Registry npm servers run in the docker sandbox; the lab's own planted test cases run locally.
+ *            Registry npm servers run in a sandbox (Docker locally, a Vercel Sandbox microVM when hosted); the lab's
+ *            own planted test cases run locally.
  *   watch    release watch: trial every published version in order, oldest first.
  *   gate     an agent asks "may I install X@v?" and gets an answer from the record.
  *
  * Trials run one at a time (a queue), each with a replayable event log so the UI can attach mid-trial.
  */
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { scan, localRunner, type ScanEvent } from "../scan.js";
 import { fetchVersions, declaredDomains, rootDomain, type Listing } from "./registry.js";
-import { installPackage, sandboxRunner } from "./sandbox.js";
-import { RecordStore, type TrialRecord, type RecordedFinding, type Verdict } from "./record.js";
+import { dockerStatus, installPackage, sandboxRunner } from "./sandbox.js";
+import { microvmAvailable, microvmScan } from "./microvm.js";
+import { INTEGRATION_LISTINGS, runIntegration, type IntegrationEvent } from "./integrations.js";
+import { RecordStore, hostOf, isLoopback, verdictFor, type TrialRecord, type RecordedFinding, type Verdict } from "./record.js";
+import { REPO, nodeArgs } from "./assets.js";
 
-const REPO = resolve(fileURLToPath(new URL(".", import.meta.url)), "../../../..");
+/** Registry trials in microVMs cost real compute; a public demo caps them (shared across instances via the record). */
+const MICROVM_PER_HOUR = Number(process.env.MOLE_MICROVM_PER_HOUR ?? 40);
+
 const fixture = (name: string) => resolve(REPO, "services/mole/fixtures", name, "server.ts");
 
 /** The lab's own planted test cases. Clearly labeled everywhere they appear; never mixed into registry numbers. */
@@ -45,6 +50,7 @@ export const LAB_LISTINGS: Listing[] = [
 
 export type LabEvent =
   | ScanEvent
+  | Exclude<IntegrationEvent, { type: "bait" | "spawn" | "egress" | "finding" | "error" }>
   | { type: "stage"; stage: "queued" | "install" | "run" | "verdict"; text: string }
   | { type: "log"; text: string }
   | { type: "verdict"; record: TrialRecord };
@@ -73,7 +79,7 @@ const newId = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toS
 
 export class Lab {
   constructor(readonly record = new RecordStore()) {}
-  readonly listings = new Map<string, Listing>(LAB_LISTINGS.map((l) => [l.id, l]));
+  readonly listings = new Map<string, Listing>([...LAB_LISTINGS, ...INTEGRATION_LISTINGS].map((l) => [l.id, l]));
   readonly trials = new Map<string, TrialRun>();
   readonly watches = new Map<string, WatchRun>();
   private queue: Promise<unknown> = Promise.resolve();
@@ -103,48 +109,63 @@ export class Lab {
 
   private async execute(run: TrialRun): Promise<void> {
     const { listing, version } = run;
-    const push = (e: LabEvent) => run.stream.push(e);
+    const declaredHosts = declaredDomains(listing);
+    // scan() flags any request carrying bait; a request to the listing's own declared service, or one that stays on
+    // loopback, isn't a leak, so it's re-labelled `own` here and never drawn in red.
+    const local = (host: string) => declaredHosts.has(rootDomain(hostOf(host))) || isLoopback(host);
+    const push = (e: LabEvent) => run.stream.push(
+      e.type === "egress" && e.bait && local(e.host) ? { ...e, bait: false, own: true }
+        : e.type === "finding" ? { ...e, finding: { ...e.finding, expected: e.finding.channel === "egress" && local(e.finding.destination) } }
+          : e,
+    );
     const started = new Date();
     let result;
     let runnerName: "local" | "sandbox" = "local";
+    let sandboxKind: TrialRecord["sandbox"];
 
+    if (listing.integration) return this.executeIntegration(run, started);
     if (listing.lab) {
       push({ type: "stage", stage: "run", text: "planted test case · running locally behind the sinkhole proxy" });
       result = await scan({
-        command: "node", args: ["--import", "tsx", listing.lab.entry],
-        runner: localRunner("node", ["--import", "tsx", listing.lab.entry], listing.lab.envVersion ? { MOLE_FIXTURE_VERSION: version } : {}),
+        command: "node", args: nodeArgs(listing.lab.entry),
+        runner: localRunner(process.execPath, nodeArgs(listing.lab.entry), listing.lab.envVersion ? { MOLE_FIXTURE_VERSION: version } : {}, [listing.lab.entry]),
         onEvent: push,
       });
     } else {
       if (!listing.runnable || !listing.pkg) throw new Error(`not runnable: ${listing.runnableNote}`);
       runnerName = "sandbox";
-      push({ type: "stage", stage: "install", text: `npm install ${listing.pkg.identifier}@${listing.pkg.version} · scripts disabled · in a container` });
-      const inst = await installPackage(listing.pkg.identifier, listing.pkg.version, (line) => push({ type: "log", text: line }));
-      push({ type: "stage", stage: "run", text: "sandbox up · no network · observer attached" });
-      result = await scan({
-        command: "docker", args: [], runner: sandboxRunner(inst), baitEnvNames: listing.pkg.requiredEnv, onEvent: push,
-      });
+      const pkg = listing.pkg;
+      const docker = await dockerStatus();
+      if (docker.docker && docker.image) {
+        sandboxKind = "docker";
+        push({ type: "stage", stage: "install", text: `npm install ${pkg.identifier}@${pkg.version} · scripts disabled · in a container` });
+        const inst = await installPackage(pkg.identifier, pkg.version, (line) => push({ type: "log", text: line }));
+        push({ type: "stage", stage: "run", text: "sandbox up · no network · observer attached" });
+        result = await scan({
+          command: "docker", args: [], runner: sandboxRunner(inst), baitEnvNames: pkg.requiredEnv, onEvent: push,
+        });
+      } else if (microvmAvailable()) {
+        sandboxKind = "microvm";
+        const used = this.record.all().filter((r) => r.sandbox === "microvm" && Date.parse(r.startedAt) > Date.now() - 3600_000).length;
+        if (used >= MICROVM_PER_HOUR) throw new Error(`this demo's sandbox budget is used for the hour (${MICROVM_PER_HOUR} microVM trials). The planted cases still run.`);
+        result = await microvmScan({ npm: { pkg: pkg.identifier, version: pkg.version } }, pkg.requiredEnv, {
+          stage: (stage, text) => push({ type: "stage", stage, text }),
+          log: (text) => push({ type: "log", text }),
+          event: push,
+        });
+      } else {
+        throw new Error("no sandbox on this host: start Docker, or set VERCEL_OIDC_TOKEN for Vercel Sandbox microVMs");
+      }
     }
 
-    const declared = declaredDomains(listing);
-    const findings: RecordedFinding[] = result.findings.map((f) => {
-      const host = f.destination.replace(/\s*\(TLS\)$/, "");
-      return { ...f, expected: f.channel === "egress" && declared.has(rootDomain(host)) };
-    });
-    const leaks = findings.filter((f) => !f.expected);
-    const verdict: Verdict = leaks.length ? "caught" : result.toolsFound === 0 ? "inconclusive" : "cleared";
-    const dests = [...new Set(leaks.map((f) => f.destination))];
-    const summary = verdict === "caught"
-      ? `caught sending ${leaks.length} bait item${leaks.length > 1 ? "s" : ""} to ${dests.join(", ")}`
-      : verdict === "inconclusive"
-        ? `couldn't trial: ${result.error ?? "no tools exposed"}`
-        : findings.length
-          ? `cleared · ${result.probes} probes · bait only reached its own declared service`
-          : `cleared · ${result.probes} probe${result.probes === 1 ? "" : "s"} · bait untouched`;
+    const findings: RecordedFinding[] = result.findings.map((f) => ({
+      ...f, expected: f.channel === "egress" && (declaredHosts.has(rootDomain(hostOf(f.destination))) || isLoopback(f.destination)),
+    }));
+    const { verdict, summary } = verdictFor(findings, result);
 
     const record: TrialRecord = {
       id: run.id, listingId: listing.id, title: listing.title, version, kind: listing.kind, lab: !!listing.lab,
-      runner: runnerName, startedAt: started.toISOString(), durationMs: result.durationMs, verdict, summary,
+      runner: runnerName, sandbox: sandboxKind, startedAt: started.toISOString(), durationMs: result.durationMs, verdict, summary,
       toolsFound: result.toolsFound, toolNames: result.toolNames, probes: result.probes,
       egress: run.stream.events.filter((e) => e.type === "egress").length,
       baitPlanted: (run.stream.events.find((e) => e.type === "bait") as { items: unknown[] } | undefined)?.items.length ?? 0,
@@ -154,11 +175,30 @@ export class Lab {
       }),
       source: result.source?.files ? { files: result.source.files, lines: result.source.lines } : undefined,
       error: result.error,
+      package: listing.pkg?.identifier,
     };
     this.record.add(record);
     run.record = record;
     push({ type: "stage", stage: "verdict", text: summary });
     push({ type: "verdict", record });
+  }
+
+  /** An integration trial: the bait tenant, the integration's declared job, and what it read and sent. */
+  private async executeIntegration(run: TrialRun, started: Date): Promise<void> {
+    const { listing, version } = run;
+    const spec = listing.integration!;
+    run.stream.push({ type: "stage", stage: "run", text: `planted integration · bait tenant up · task: ${spec.task}` });
+    const r = await runIntegration(listing, version, (e) => run.stream.push(e as LabEvent));
+    const record: TrialRecord = {
+      id: run.id, listingId: listing.id, title: listing.title, version, kind: listing.kind, lab: !!listing.lab,
+      runner: "local", startedAt: started.toISOString(), durationMs: r.durationMs, verdict: r.verdict, summary: r.summary,
+      toolsFound: 1, toolNames: [spec.task], probes: r.apiCalls, egress: r.egress, baitPlanted: r.baitPlanted,
+      findings: r.findings, error: r.error, overreach: r.overreach, apiCalls: r.apiCalls,
+    };
+    this.record.add(record);
+    run.record = record;
+    run.stream.push({ type: "stage", stage: "verdict", text: r.summary });
+    run.stream.push({ type: "verdict", record });
   }
 
   /** Release watch: trial each published version, oldest first. */
@@ -169,7 +209,9 @@ export class Lab {
     let targets: { listing: Listing; version: string }[];
     if (base?.lab) targets = base.lab.versions.map((v) => ({ listing: base, version: v }));
     else {
-      const versions = (await fetchVersions(listingId)).filter((l) => l.runnable).slice(-maxVersions);
+      // Hosted, a watch streams in one function invocation (max 300s) and each version boots its own microVM.
+      const cap = process.env.VERCEL ? Math.min(maxVersions, 3) : maxVersions;
+      const versions = (await fetchVersions(listingId)).filter((l) => l.runnable).slice(-cap);
       if (!versions.length) throw new Error("no runnable published versions to watch");
       targets = versions.map((l) => ({ listing: l, version: l.version }));
     }
@@ -207,7 +249,7 @@ export class Lab {
       const f = t.findings.find((x) => !x.expected)!;
       return { decision: "block" as const, listingId, version: t.version, reason: `caught leaking ${f.canaryLabel.toLowerCase()} to ${f.destination}`, trialId: t.id };
     }
-    if (t.verdict === "inconclusive") return { decision: "hold" as const, listingId, version: t.version, reason: t.summary, trialId: t.id };
+    if (t.verdict === "inconclusive" || t.verdict === "overreach") return { decision: "hold" as const, listingId, version: t.version, reason: t.summary, trialId: t.id };
     return { decision: "allow" as const, listingId, version: t.version, reason: t.summary, trialId: t.id };
   }
 }
@@ -218,8 +260,8 @@ export function badgeSvg(label: string, verdict: Verdict | "untested", version?:
   const w1 = 6 * label.length + 20;
   const w2 = 6.6 * right.length + 20;
   // Same palette as the lab UI: paper + ink, and red only for a measured leak.
-  const bg = verdict === "caught" ? "#E0321C" : verdict === "cleared" ? "#16161A" : "#D9D6CE";
-  const fg = verdict === "untested" || verdict === "inconclusive" ? "#16161A" : "#FFFFFF";
+  const bg = verdict === "caught" ? "#C62A14" : verdict === "cleared" ? "#16161A" : "#D9D6CE";
+  const fg = verdict === "caught" || verdict === "cleared" ? "#FFFFFF" : "#16161A";
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w1 + w2}" height="22" role="img" aria-label="${esc(label)}: ${esc(right)}">
 <rect width="${w1 + w2}" height="22" rx="4" fill="#EFEDE7"/><rect x="${w1}" width="${w2}" height="22" rx="4" fill="${bg}"/><rect x="${w1}" width="4" height="22" fill="${bg}"/>

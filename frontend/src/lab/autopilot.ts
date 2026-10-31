@@ -3,6 +3,7 @@
  * watch, gate calls) — the only timers are short reading pauses between steps, never stand-ins for results.
  */
 import { useCallback, useRef } from "react";
+import { sandboxReady } from "./api";
 import { useLab } from "./store";
 import { scrollToId } from "./components/ui";
 import { useGateAsks } from "./components/Gate";
@@ -16,6 +17,9 @@ export const STEPS = [
   "Watching every mailer-mcp release",
   "Writing it to the record",
   "Gating an agent's installs",
+  "Trialing an integration against a bait tenant",
+  "Planting an identity with every vendor",
+  "Turning the record into products",
 ] as const;
 
 export function useAutopilot() {
@@ -48,6 +52,13 @@ export function useAutopilot() {
       await step(0, async () => { await go("market"); await L().runCrawl(3); await pause(1200); });
 
       await step(1, async () => {
+        const h = L().health;
+        if (!h || !sandboxReady(h)) {
+          // No sandbox on this host: say so and move on, never pretend.
+          L().setPilot({ label: "No sandbox on this host for registry servers. Skipping to the planted cases." });
+          await pause(3200);
+          return;
+        }
         const crawl = L().crawl;
         const quick = new Map(L().index.filter((r) => !r.lab && r.verdict !== "inconclusive").map((r) => [r.listingId, r.durationMs]));
         const candidates = crawl.listings.filter((l) => l.runnable && l.kind === "npm" && !l.pkg?.requiredEnv.length);
@@ -79,6 +90,9 @@ export function useAutopilot() {
           await pause(1100);
         }
       });
+      await step(7, async () => { await go("integrations"); await L().runIntegrationWatch("lab/helpdesk-copilot"); await pause(2600); });
+      await step(8, async () => { await go("identities"); await L().runIdentities(); await pause(2600); });
+      await step(9, async () => { await L().refreshRecord(); await go("products"); await pause(3200); });
       L().setPilot({ running: false, label: "Done. Everything above was measured live.", done: true });
     } catch (e) {
       if ((e as Error).message !== "cancelled") L().setPilot({ running: false, label: `Stopped: ${(e as Error).message}`, done: false });

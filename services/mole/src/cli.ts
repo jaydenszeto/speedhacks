@@ -7,6 +7,8 @@
  *   mole run                         run the known-bad agent and catch it live
  *   mole report                      render the Trust Report from the last hire, pick, scan, or run
  *   mole doctor                      preflight check the environment
+ *   mole identities mint|list|check  planted identities: which vendor leaked or sold your data?
+ *   mole bom <manifest>              behavioral bill of materials against the local record (.mole/record.json)
  */
 import { scan } from "./scan.js";
 import { run } from "./run.js";
@@ -17,6 +19,10 @@ import { hire, DEFAULT_HIRE_TASK } from "./hire.js";
 import { renderScan, col } from "./format.js";
 import { saveLastScan, saveLastPick, saveLastHire } from "./state.js";
 import { replayBannerIfEnabled, isReplay } from "./demo.js";
+import { readFileSync } from "node:fs";
+import { IdentityLedger, maskIdentity } from "./lab/identities.js";
+import { behavioralBom } from "./lab/products.js";
+import { RecordStore } from "./lab/record.js";
 
 function splitTarget(rest: string[]): { flags: string[]; command?: string; args: string[] } {
   const flags: string[] = [];
@@ -93,6 +99,68 @@ async function cmdReport(rest: string[]): Promise<number> {
   return 0;
 }
 
+function readInput(path: string | undefined): string | null {
+  if (!path) return null;
+  return readFileSync(path === "-" ? 0 : path, "utf8");
+}
+
+async function cmdIdentities(rest: string[]): Promise<number> {
+  const [sub, ...args] = rest;
+  const ledger = new IdentityLedger();
+  const flag = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
+  if (sub === "mint") {
+    const vendor = args.find((a, i) => !a.startsWith("-") && !["--purpose", "--domain", "--phone"].includes(args[i - 1] ?? ""));
+    if (!vendor) { console.error(`usage: ${col.bold("mole identities mint")} <vendor> [--purpose "<what you'll use it for>"] [--domain <mail domain you control>] [--phone <number you control>]`); return 2; }
+    const i = ledger.mint(vendor, flag("--purpose") ?? "signup", { domain: flag("--domain"), phone: flag("--phone") });
+    // The person you hand over is printed in full exactly once, here, so you can use it. The ledger keeps it.
+    console.log(`${col.bold("identity for")} ${vendor} ${col.dim(`(${i.id})`)}
+`);
+    console.log(`  name     ${i.first} ${i.last}
+  email    ${i.email}
+  phone    ${i.phone}
+  address  ${i.address}
+  phrase   ${i.phrase}
+`);
+    console.log(col.dim("Hand this to that vendor only. Later: mole identities check <file> on any spam, dump, list, or model output."));
+    if (!flag("--domain") && !process.env.MOLE_IDENTITY_DOMAIN) console.log(col.dim("Using mole-canary.example (reserved, can't receive mail). Set --domain or MOLE_IDENTITY_DOMAIN to a domain you control."));
+    return 0;
+  }
+  if (sub === "list") {
+    const all = ledger.all().map(maskIdentity);
+    if (!all.length) { console.log(col.dim("No identities yet. mole identities mint <vendor>")); return 0; }
+    for (const i of all) console.log(`${i.id}  ${i.vendor.padEnd(22)} ${i.email.padEnd(34)} ${i.phone}  ${col.dim(i.issuedAt.slice(0, 10))}`);
+    return 0;
+  }
+  if (sub === "check") {
+    const text = readInput(args[0]);
+    if (text === null) { console.error(`usage: ${col.bold("mole identities check")} <file | ->`); return 2; }
+    const sightings = ledger.check(text, args[0] === "-" ? "stdin" : args[0]!);
+    if (!sightings.length) { console.log(`No ledger identities found in ${args[0]}. ${col.dim("(Absence isn't proof a vendor is clean.)")}`); return 0; }
+    for (const s of sightings) console.log(`${col.red(col.bold("SIGHTING"))}  identity ${s.identityId} was given only to ${col.bold(s.vendor)} · matched ${s.fields.join(", ")}`);
+    return 1;
+  }
+  console.error(`usage: mole identities <mint|list|check>`);
+  return 2;
+}
+
+async function cmdBom(rest: string[]): Promise<number> {
+  const json = rest.includes("--json");
+  const text = readInput(rest.find((a) => !a.startsWith("--")));
+  if (text === null) { console.error(`usage: ${col.bold("mole bom")} [--json] <package.json | .mcp.json | list.txt | ->`); return 2; }
+  const bom = behavioralBom(text, new RecordStore());
+  if (json) { console.log(JSON.stringify(bom, null, 2)); }
+  else {
+    for (const c of bom.components) {
+      const tag = c.status === "caught" ? col.red(col.bold("CAUGHT   ")) : c.status === "cleared" ? col.bold("cleared  ") : col.dim(c.status.padEnd(9));
+      console.log(`${tag} ${c.ref}  ${col.dim(c.summary ?? "")}`);
+    }
+    const s = bom.summary;
+    console.log(`
+${s.components} components · ${s.cleared} cleared · ${s.caught} caught · ${s.overreach} overreach · ${s.untested} untested`);
+  }
+  return bom.summary.caught > 0 ? 1 : 0;
+}
+
 async function main(): Promise<number> {
   const [cmd, ...rest] = process.argv.slice(2);
   switch (cmd) {
@@ -102,6 +170,8 @@ async function main(): Promise<number> {
     case "run": return cmdRun(rest);
     case "report": return cmdReport(rest);
     case "doctor": return doctor();
+    case "identities": return cmdIdentities(rest);
+    case "bom": return cmdBom(rest);
     case undefined:
     case "-h":
     case "--help":
@@ -112,6 +182,8 @@ async function main(): Promise<number> {
       console.log(`  mole run                         run the known-bad agent and catch it live`);
       console.log(`  mole report                      render the Trust Report from the last hire, pick, scan, or run`);
       console.log(`  mole doctor                      preflight check the environment`);
+      console.log(`  mole identities mint <vendor>    a planted identity for one vendor; check <file> finds who leaked it`);
+      console.log(`  mole bom <manifest>              check package.json / MCP config deps against the record, per version`);
       return 0;
     default:
       console.error(`unknown command: ${cmd}`);

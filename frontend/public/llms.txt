@@ -1,10 +1,14 @@
 # Mole
 
-> We test the tools AI agents install for leaks. Mole pulls MCP servers from the official MCP Registry, runs each one in a network-less sandbox seeded with self-minted bait secrets, calls every tool, and records what tries to leave. Verdicts are per exact version.
+> We test what you hand your data to. Mole pulls MCP servers from the official MCP Registry, runs each one in a network-less sandbox (Docker, or a Vercel Sandbox microVM sealed to deny-all) seeded with self-minted bait secrets, calls every tool, and records what tries to leave. The same method trials OAuth integrations against a bait CRM tenant and plants a unique identity with every vendor. Verdicts are per exact version.
 
 ## API (served by the Mole lab)
 
 - [Install gate](/lab/gate?id=lab/mailer-mcp&version=1.0.16): allow / block / hold for listing@version, from the record
 - [Record](/lab/record): latest trial per listing@version, plus totals
-- [Health](/lab/health): sandbox, registry reachability, record size
+- [Feed](/lab/feed.json): one measured row per artifact@version (schema mole-feed/1); JSONL at /lab/feed.jsonl
+- Behavioral BOM: `POST /lab/bom {"text": "<package.json | MCP config | name@version lines>"}` (mole-bbom/1)
+- Review report: `/lab/report/<trial-id>` (printable HTML)
+- Identity check: `POST /lab/identities/check {"text": "..."}` names the vendor any planted identity was given to
+- [Health](/lab/health): sandbox (docker | microvm | none), registry reachability, record size
 - Badge: `/lab/badge/<listing-id>.svg?version=<v>`

@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useLab } from "../store";
 import type { BaitItem, Finding, LabEvent } from "../types";
-import { EASE_OUT, Section, ms, scrollToId } from "./ui";
+import { EASE_OUT, Section, expectedWhere, ms, scrollToId } from "./ui";
 
 type Ev<T extends LabEvent["type"]> = Extract<LabEvent, { type: T }>;
 
@@ -14,7 +14,7 @@ export function takenBait(bait: BaitItem[], findings: Finding[]): Set<string> {
 }
 
 export function TrialLab() {
-  const { trial, crawl, runTrial } = useLab();
+  const { trial, crawl, runTrial, health } = useLab();
   const { events, record } = trial;
 
   // Stamp each event with when it arrived, so the log reads as a real timeline.
@@ -70,7 +70,7 @@ export function TrialLab() {
           <div className="trial__meta">
             <span className="chip">{l?.name}</span>
             <span className="chip">v{trial.version}</span>
-            {runner === "sandbox" && <span className="chip chip--lab">sandbox · docker · network none</span>}
+            {runner === "sandbox" && <span className="chip chip--lab">{(record?.sandbox ?? health?.sandbox.kind) === "microvm" ? "sandbox · microVM · network deny-all" : "sandbox · docker · network none"}</span>}
             {runner === "local" && <span className="chip chip--lab">lab · planted case · local</span>}
             {tools.length > 0 && <span className="chip">{tools.length} tools</span>}
           </div>
@@ -119,7 +119,7 @@ export function TrialLab() {
                   key={i} className={`egress__row${e.bait ? " egress__row--bait" : ""}`}
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: EASE_OUT }}
                 >
-                  <span className="mono-xs faint">{e.method} · {e.scheme} · from {e.tool}{e.bait && <span className="tag"> · carries bait</span>}</span>
+                  <span className="mono-xs faint">{e.method} · {e.scheme} · from {e.tool}{e.bait ? <span className="tag"> · carries bait</span> : e.own ? " · bait to its own declared service" : ""}</span>
                   <b>{e.host}</b>
                   <span className="faint" style={{ overflowWrap: "anywhere" }}>{e.target} · {e.bytes} bytes</span>
                 </motion.div>
@@ -148,7 +148,7 @@ function LogRow({ e, t }: { e: LabEvent; t: number }) {
     case "probe": return row("log__row--probe", <><b>call {e.tool}</b><span className="log__args">{e.args}</span></>);
     case "probe-done": return row("log__row--muted", `${e.tool} returned ${e.outcome} · ${ms(e.ms)}`);
     case "egress": return row(e.bait ? "leak" : "", `${e.tool} → ${e.method} ${e.host}${e.bait ? " · BAIT IN PAYLOAD" : ""}`);
-    case "finding": return e.finding.expected ? row("", `${e.finding.canaryLabel} went to ${e.finding.destination} (its own declared service)`) : row("leak", `LEAK · ${e.finding.canaryLabel} → ${e.finding.destination}`);
+    case "finding": return e.finding.expected ? row("", `${e.finding.canaryLabel} went to ${e.finding.destination} (${expectedWhere(e.finding.destination)})`) : row("leak", `LEAK · ${e.finding.canaryLabel} → ${e.finding.destination}`);
     case "error": return row("", `error: ${e.message}`);
     case "done": return row("log__row--muted", "scan complete");
     case "verdict": return null;

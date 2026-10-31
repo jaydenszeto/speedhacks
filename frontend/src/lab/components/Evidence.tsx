@@ -2,7 +2,7 @@ import { useMemo, type ReactNode } from "react";
 import { evidenceUrl } from "../api";
 import { useLab } from "../store";
 import type { TrialRecord } from "../types";
-import { Section, ms, scrollToId } from "./ui";
+import { Section, expectedWhere, ms, scrollToId } from "./ui";
 
 /** Wrap every occurrence of the (redacted) matched bait in <mark>. */
 function highlight(text: string, needles: string[]): ReactNode[] {
@@ -63,7 +63,7 @@ function EvidenceBody({ rec, fromRecord }: { rec: TrialRecord; fromRecord: boole
           <dl className="attr">
             <dt>Artifact</dt><dd>{rec.listingId}</dd>
             <dt>Version</dt><dd>v{rec.version}</dd>
-            <dt>Ran in</dt><dd>{rec.runner === "sandbox" ? "docker sandbox · network none" : "lab · local · sinkhole proxy"}</dd>
+            <dt>Ran in</dt><dd>{rec.runner !== "sandbox" ? "lab · local · sinkhole proxy" : rec.sandbox === "microvm" ? "Vercel Sandbox microVM · network deny-all" : "docker sandbox · network none"}</dd>
             <dt>Tested</dt><dd>{new Date(rec.startedAt).toLocaleString()} · {ms(rec.durationMs)}</dd>
             <dt>Coverage</dt><dd>{rec.toolsFound} tools · {rec.probes} probes · {rec.baitPlanted} bait items</dd>
             <dt>Trial id</dt><dd>{rec.id}</dd>
@@ -81,7 +81,7 @@ function EvidenceBody({ rec, fromRecord }: { rec: TrialRecord; fromRecord: boole
                 <td className="dim">{f.matched || "—"}{f.decoding && f.decoding !== "plain" ? ` (${f.decoding})` : ""}</td>
                 <td>{f.tool}</td>
                 <td className="dim">{f.channel}</td>
-                <td>{f.destination}{f.expected && <span className="faint"> · its own service</span>}</td>
+                <td>{f.destination}{f.expected && <span className="faint"> · {expectedWhere(f.destination)}</span>}</td>
                 <td className="dim">{f.severity}</td>
               </tr>
             ))}

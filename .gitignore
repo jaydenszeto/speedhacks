@@ -11,3 +11,4 @@ data/
 .impeccable/review/
 coverage/
 .mole/
+.vercel/

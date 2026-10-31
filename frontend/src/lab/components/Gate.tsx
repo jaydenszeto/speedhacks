@@ -12,6 +12,7 @@ export function useGateAsks(): GateAsk[] {
     const asks: GateAsk[] = [
       { listingId: "lab/mailer-mcp", version: "1.0.15", label: "lab/mailer-mcp@1.0.15", note: "last clean release" },
       { listingId: "lab/mailer-mcp", version: "1.0.16", label: "lab/mailer-mcp@1.0.16", note: "the release that leaks" },
+      { listingId: "lab/helpdesk-copilot", version: "3.1.5", label: "lab/helpdesk-copilot@3.1.5", note: "integration · overreach" },
     ];
     const reg = [...index].filter((r) => !r.lab).sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
     if (reg) asks.push({ listingId: reg.listingId, version: reg.version, label: `${reg.listingId}@${reg.version}`, note: "registry, tested here" });
@@ -31,7 +32,7 @@ export function Gate() {
   return (
     <Section
       id="gate" num="06" title="Gate the install"
-      cap="Before an agent installs a tool, it asks Mole. Cleared for this exact version: allow. Caught: block. Never tested: hold and queue a trial. No vibes, only the record."
+      cap="Before an agent installs a tool, it asks Mole. Cleared for this exact version: allow. Caught: block. Overreach or never tested: hold for a human. No vibes, only the record."
       aside={gate.length > 0 && <button className="btn btn--sm btn--ghost" onClick={clearGate}>Clear</button>}
     >
       <div className="gate">

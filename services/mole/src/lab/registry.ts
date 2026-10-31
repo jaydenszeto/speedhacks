@@ -9,7 +9,7 @@
 
 export const REGISTRY = "https://registry.modelcontextprotocol.io/v0";
 
-export type ListingKind = "npm" | "pypi" | "oci" | "remote" | "other" | "lab";
+export type ListingKind = "npm" | "pypi" | "oci" | "remote" | "other" | "lab" | "integration";
 
 export interface Listing {
   id: string;
@@ -28,6 +28,17 @@ export interface Listing {
   runnableNote: string;
   /** Present on the lab's own planted test cases (never on registry listings). */
   lab?: { note: string; versions: string[]; entry: string; envVersion?: boolean };
+  /** Present on SaaS / AI integrations, which are trialed against a bait tenant instead of probed as MCP servers. */
+  integration?: IntegrationSpec;
+}
+
+/** What an integration says it does. Mole checks it against what the tenant saw it read and where data went. */
+export interface IntegrationSpec {
+  platform: string;
+  task: string;
+  scopes: { read: string[]; write: string[] };
+  /** Hosts the integration declares as its own (data sent there is expected use). */
+  domains: string[];
 }
 
 interface RawPackage {
@@ -139,6 +150,7 @@ export function declaredDomains(l: Listing): Set<string> {
   l.remotes.forEach(add);
   const ns = l.name.split("/")[0] ?? "";
   if (ns && !ns.startsWith("io.github.") && ns.includes(".")) out.add(ns.split(".").reverse().slice(-2).join(".").toLowerCase());
+  for (const d of l.integration?.domains ?? []) out.add(rootDomain(d));
   out.delete("github.com");
   return out;
 }
